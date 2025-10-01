@@ -1,6 +1,6 @@
 import { storage } from './storage';
 
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 class AIChatbot {
