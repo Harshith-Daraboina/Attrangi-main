@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Attrangi App",
+    "slug": "attrangi-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/doc4.png",
+    "splash": {
+      "image": "./assets/doc4.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/doc4.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/doc4.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-asset",
+      "expo-web-browser"
+    ]
+  }
+}
