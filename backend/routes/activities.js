@@ -26,8 +26,8 @@ const updateActivityValidation = [
 
 // @route   POST /api/activities
 // @desc    Create new activity
-// @access  Private (Doctor/Therapist only)
-router.post('/', authorize('doctor', 'therapist'), createActivityValidation, validate, sanitizeInput, async (req, res) => {
+// @access  Private (Doctor only)
+router.post('/', authorize('doctor'), createActivityValidation, validate, sanitizeInput, async (req, res) => {
   try {
     const activityData = {
       ...req.body,
@@ -70,7 +70,7 @@ router.get('/', sanitizeInput, async (req, res) => {
     let filter = {};
     if (req.user.role === 'patient') {
       filter.assignedTo = req.user._id;
-    } else if (req.user.role === 'doctor' || req.user.role === 'therapist') {
+    } else if (req.user.role === 'doctor') {
       filter.assignedBy = req.user._id;
     } else {
       return res.status(403).json({
@@ -329,9 +329,9 @@ router.post('/:id/skip', [
 });
 
 // @route   GET /api/activities/patient/:patientId
-// @desc    Get activities for a specific patient (Doctor/Therapist only)
-// @access  Private (Doctor/Therapist only)
-router.get('/patient/:patientId', authorize('doctor', 'therapist'), sanitizeInput, async (req, res) => {
+// @desc    Get activities for a specific patient (Doctor only)
+// @access  Private (Doctor only)
+router.get('/patient/:patientId', authorize('doctor'), sanitizeInput, async (req, res) => {
   try {
     const { 
       status, 
@@ -385,7 +385,7 @@ router.get('/stats/summary', sanitizeInput, async (req, res) => {
     
     if (req.user.role === 'patient') {
       filter.assignedTo = req.user._id;
-    } else if (req.user.role === 'doctor' || req.user.role === 'therapist') {
+    } else if (req.user.role === 'doctor') {
       filter.assignedBy = req.user._id;
     } else {
       return res.status(403).json({

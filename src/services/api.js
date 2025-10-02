@@ -103,6 +103,10 @@ class ApiService {
     return this.post('/auth/logout');
   }
 
+  async changePassword(passwordData) {
+    return this.put('/auth/change-password', passwordData);
+  }
+
   async verifyEmail(email, otp) {
     return this.post('/auth/verify-email', { email, otp });
   }
@@ -144,7 +148,7 @@ class ApiService {
   }
 
   async createDoctorProfile(profileData) {
-    return this.post('/doctors', profileData);
+    return this.post('/doctors/profile', profileData);
   }
 
   async updateDoctorProfile(updates) {
@@ -153,6 +157,47 @@ class ApiService {
 
   async updateDoctorAvailability(availability) {
     return this.put('/doctors/availability', availability);
+  }
+
+  async toggleDoctorActiveToday() {
+    return this.put('/doctors/active-today');
+  }
+
+  async updateDoctorPaymentDetails(paymentData) {
+    return this.put('/doctors/payment-details', paymentData);
+  }
+
+  // Document operations
+  async uploadDocuments(formData) {
+    const url = `${this.baseURL}/doctors/documents/upload`;
+    const headers = {};
+    
+    if (this.authToken) {
+      headers.Authorization = `Bearer ${this.authToken}`;
+    }
+
+    // Don't set Content-Type header for FormData - let the browser set it with boundary
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return data;
+  }
+
+  async getDocuments() {
+    return this.get('/doctors/documents');
+  }
+
+  async deleteDocument(documentType) {
+    return this.delete(`/doctors/documents/${documentType}`);
   }
 
   // Appointment operations

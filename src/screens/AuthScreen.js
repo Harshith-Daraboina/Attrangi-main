@@ -17,7 +17,6 @@ import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../styles/de
 import { useAuth } from '../contexts/AuthContext';
 import googleAuthService from '../services/googleAuth';
 import { convertToDisplayFormat } from '../utils/dateUtils';
-import QuickAccess from '../components/QuickAccess';
 
 export default function AuthScreen({ navigation }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -64,6 +63,10 @@ export default function AuthScreen({ navigation }) {
     if (!isLogin) {
       if (!formData.firstName || !formData.lastName || !formData.dateOfBirth) {
         Alert.alert('Validation Error', 'Please fill in all required fields for registration.');
+        return false;
+      }
+      if (!formData.role) {
+        Alert.alert('Validation Error', 'Please select your account type (Patient, Caregiver, or Doctor).');
         return false;
       }
     }
@@ -203,28 +206,6 @@ export default function AuthScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>I am a *</Text>
-                <View style={styles.roleSelector}>
-                  {['patient', 'caregiver', 'therapist', 'doctor'].map((role) => (
-                    <TouchableOpacity
-                      key={role}
-                      style={[
-                        styles.roleOption,
-                        formData.role === role && styles.roleOptionSelected
-                      ]}
-                      onPress={() => handleInputChange('role', role)}
-                    >
-                      <Text style={[
-                        styles.roleText,
-                        formData.role === role && styles.roleTextSelected
-                      ]}>
-                        {role.charAt(0).toUpperCase() + role.slice(1)}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
             </>
           )}
 
@@ -327,6 +308,59 @@ export default function AuthScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Signup Types for Registration */}
+        {!isLogin && (
+          <View style={styles.signupTypesContainer}>
+            <Text style={styles.signupTypesTitle}>Choose Your Account Type</Text>
+            <View style={styles.signupTypesGrid}>
+              <TouchableOpacity 
+                style={[styles.signupTypeCard, formData.role === 'patient' && styles.signupTypeCardSelected]}
+                onPress={() => handleInputChange('role', 'patient')}
+              >
+                <Ionicons name="person-outline" size={32} color={formData.role === 'patient' ? Colors.primary : Colors.textSecondary} />
+                <View style={styles.signupTypeTextContainer}>
+                  <Text style={[styles.signupTypeTitle, formData.role === 'patient' && styles.signupTypeTitleSelected]}>
+                    Patient
+                  </Text>
+                  <Text style={styles.signupTypeDescription}>
+                    Track your mental health journey
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.signupTypeCard, formData.role === 'caregiver' && styles.signupTypeCardSelected]}
+                onPress={() => handleInputChange('role', 'caregiver')}
+              >
+                <Ionicons name="heart-outline" size={32} color={formData.role === 'caregiver' ? Colors.primary : Colors.textSecondary} />
+                <View style={styles.signupTypeTextContainer}>
+                  <Text style={[styles.signupTypeTitle, formData.role === 'caregiver' && styles.signupTypeTitleSelected]}>
+                    Caregiver
+                  </Text>
+                  <Text style={styles.signupTypeDescription}>
+                    Support your loved one's journey
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.signupTypeCard, formData.role === 'doctor' && styles.signupTypeCardSelected]}
+                onPress={() => handleInputChange('role', 'doctor')}
+              >
+                <Ionicons name="medical-outline" size={32} color={formData.role === 'doctor' ? Colors.primary : Colors.textSecondary} />
+                <View style={styles.signupTypeTextContainer}>
+                  <Text style={[styles.signupTypeTitle, formData.role === 'doctor' && styles.signupTypeTitleSelected]}>
+                    Doctor
+                  </Text>
+                  <Text style={styles.signupTypeDescription}>
+                    Provide professional medical care
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Privacy Notice */}
         <View style={styles.privacyContainer}>
           <Text style={styles.privacyText}>
@@ -335,8 +369,6 @@ export default function AuthScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* Quick Access - Direct Dashboard Navigation */}
-        <QuickAccess navigation={navigation} />
       </ScrollView>
 
       {showDatePicker && (
@@ -539,5 +571,49 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  signupTypesContainer: {
+    marginBottom: Spacing.lg,
+  },
+  signupTypesTitle: {
+    ...Typography.heading3,
+    color: Colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  signupTypesGrid: {
+    gap: Spacing.md,
+  },
+  signupTypeCard: {
+    backgroundColor: Colors.surface,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  signupTypeCardSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '10',
+  },
+  signupTypeTextContainer: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  signupTypeTitle: {
+    ...Typography.body,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.xs,
+  },
+  signupTypeTitleSelected: {
+    color: Colors.primary,
+  },
+  signupTypeDescription: {
+    ...Typography.caption,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

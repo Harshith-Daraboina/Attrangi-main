@@ -16,16 +16,20 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../../styles/designSystem';
 import { useThemeSettings } from '../../styles/ThemeContext';
 import { convertToISOFormat, convertToDisplayFormat } from '../../utils/dateUtils';
+import api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 export default function PatientOnboardingScreen({ navigation }) {
   const { palette } = useThemeSettings();
+  const { refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isChatbotActive, setIsChatbotActive] = useState(false);
   const [chatbotStep, setChatbotStep] = useState(0);
   const [chatbotResponses, setChatbotResponses] = useState({});
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -105,9 +109,6 @@ export default function PatientOnboardingScreen({ navigation }) {
 
   const steps = [
     'Basic Information',
-    'Therapy Assessment',
-    'Medical History',
-    'Emergency Contact',
     'Profile Picture',
   ];
 
@@ -200,25 +201,75 @@ export default function PatientOnboardingScreen({ navigation }) {
     }));
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (currentStep < steps.length - 1) {
-      if (currentStep === 1 && !isChatbotActive) {
-        startChatbotAssessment();
-        return;
-      }
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
+      // Complete onboarding - save profile data
+      await completeOnboarding();
+    }
+  };
+
+  const completeOnboarding = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Prepare profile data for API
+      const profileData = {
+        profile: {
+          firstName: formData.fullName.split(' ')[0] || '',
+          lastName: formData.fullName.split(' ').slice(1).join(' ') || '',
+          dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : null,
+          gender: formData.gender,
+          phone: formData.phone,
+          bio: formData.medicalHistory,
+          preferences: {
+            notifications: {
+              email: true,
+              push: true,
+              sms: false
+            },
+            privacy: {
+              profileVisibility: 'private',
+              showOnlineStatus: true
+            }
+          }
+        },
+        isProfileComplete: true
+      };
+
+      // Save profile to backend
+      const response = await api.updateProfile(profileData);
+      
+      if (response.success) {
+        // Refresh user data
+        await refreshUser();
+        
+        Alert.alert(
+          'Welcome to Attrangi!',
+          'Your profile has been created successfully. You can now connect with therapists and start your wellness journey.',
+          [
+            {
+              text: 'Continue',
+              onPress: () => navigation.navigate('MainPatient'),
+            },
+          ]
+        );
+      } else {
+        throw new Error(response.message || 'Failed to save profile');
+      }
+    } catch (error) {
+      console.error('Onboarding completion error:', error);
       Alert.alert(
-        'Welcome to Attrangi!',
-        'Your profile has been created successfully. You can now connect with therapists and start your wellness journey.',
+        'Error',
+        'Failed to complete profile setup. Please try again.',
         [
-          {
-            text: 'Continue',
-            onPress: () => navigation.navigate('MainPatient'),
-          },
+          { text: 'Retry', onPress: () => completeOnboarding() },
+          { text: 'Skip for now', onPress: () => navigation.navigate('MainPatient') }
         ]
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -640,12 +691,6 @@ export default function PatientOnboardingScreen({ navigation }) {
       case 0:
         return renderBasicInfo();
       case 1:
-        return renderTherapyAssessment();
-      case 2:
-        return renderMedicalHistory();
-      case 3:
-        return renderEmergencyContact();
-      case 4:
         return renderProfilePicture();
       default:
         return renderBasicInfo();
@@ -655,7 +700,7 @@ export default function PatientOnboardingScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('Auth')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={palette.text} />
         </TouchableOpacity>
         <Text style={[Typography.heading1, { color: palette.text }]}>
@@ -683,9 +728,10 @@ export default function PatientOnboardingScreen({ navigation }) {
           <TouchableOpacity
             style={[styles.button, styles.primaryButton, { backgroundColor: palette.primary }]}
             onPress={nextStep}
+            disabled={isLoading}
           >
             <Text style={[styles.buttonText, { color: '#fff' }]}>
-              {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
+              {isLoading ? 'Saving...' : (currentStep === steps.length - 1 ? 'Complete Setup' : 'Next')}
             </Text>
           </TouchableOpacity>
         </View>

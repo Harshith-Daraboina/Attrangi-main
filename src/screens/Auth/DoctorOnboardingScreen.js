@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,18 +9,24 @@ import {
   Alert,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../../styles/designSystem';
 import { useThemeSettings } from '../../styles/ThemeContext';
 import { convertToISOFormat, convertToDisplayFormat } from '../../utils/dateUtils';
+import api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 export default function DoctorOnboardingScreen({ navigation }) {
   const { palette } = useThemeSettings();
+  const { user, refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -41,6 +47,33 @@ export default function DoctorOnboardingScreen({ navigation }) {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Check if we're editing an existing profile
+  useEffect(() => {
+    if (user?.doctorProfile) {
+      setIsEditing(true);
+      const profile = user.doctorProfile;
+      setFormData({
+        fullName: user.name || '',
+        email: user.email || '',
+        phone: user.profile?.phone || '',
+        gender: user.profile?.gender || '',
+        dateOfBirth: user.profile?.dateOfBirth || '',
+        medicalLicenseNumber: profile.licenseNumber || '',
+        yearsOfExperience: profile.experience?.toString() || '',
+        specialization: profile.specialization || '',
+        languages: profile.languages || [],
+        consultationFee: profile.consultationFee?.toString() || '',
+        availability: {
+          weekdays: Object.keys(profile.availability || {}).filter(day => 
+            profile.availability[day] && profile.availability[day].length > 0
+          ),
+          timeSlots: [],
+        },
+        profilePicture: null,
+      });
+    }
+  }, [user]);
 
   const specializations = [
     'Psychology',
@@ -119,21 +152,92 @@ export default function DoctorOnboardingScreen({ navigation }) {
     return [...array, item];
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
-      Alert.alert(
-        'Welcome to Attrangi!',
-        'Your profile has been created successfully. You can now start helping patients.',
-        [
+      // Complete onboarding and save to backend
+      await completeDoctorOnboarding();
+    }
+  };
+
+  const completeDoctorOnboarding = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Prepare doctor profile data
+      const doctorProfile = {
+        specialization: formData.specialization,
+        licenseNumber: formData.medicalLicenseNumber,
+        experience: parseInt(formData.yearsOfExperience) || 0,
+        education: [
           {
-            text: 'Continue',
-            onPress: () => navigation.navigate('MainTherapist'),
-          },
-        ]
+            degree: 'MD',
+            institution: 'Medical College',
+            year: new Date().getFullYear() - parseInt(formData.yearsOfExperience) || 2020
+          }
+        ],
+        languages: formData.languages,
+        consultationFee: parseInt(formData.consultationFee) || 1000,
+        bio: `Dr. ${formData.fullName} is a ${formData.specialization} specialist with ${formData.yearsOfExperience} years of experience.`,
+        availability: {
+          monday: formData.availability.weekdays.includes('Monday') ? [{ start: '09:00', end: '17:00' }] : [],
+          tuesday: formData.availability.weekdays.includes('Tuesday') ? [{ start: '09:00', end: '17:00' }] : [],
+          wednesday: formData.availability.weekdays.includes('Wednesday') ? [{ start: '09:00', end: '17:00' }] : [],
+          thursday: formData.availability.weekdays.includes('Thursday') ? [{ start: '09:00', end: '17:00' }] : [],
+          friday: formData.availability.weekdays.includes('Friday') ? [{ start: '09:00', end: '17:00' }] : [],
+          saturday: formData.availability.weekdays.includes('Saturday') ? [{ start: '09:00', end: '13:00' }] : [],
+          sunday: formData.availability.weekdays.includes('Sunday') ? [] : [],
+        },
+        consultationTypes: ['video', 'in-person'],
+        maxPatientsPerDay: 10,
+        verificationStatus: 'pending',
+        profileCompletion: {
+          personalInfo: true,
+          professionalDetails: true,
+          specialization: true,
+          availability: true,
+          paymentDetails: false,
+          documents: true // Optional, always true
+        }
+      };
+
+      // Create or update doctor profile
+      let response;
+      if (isEditing) {
+        response = await api.updateDoctorProfile(doctorProfile);
+      } else {
+        response = await api.createDoctorProfile(doctorProfile);
+      }
+      
+      if (response.success) {
+        // Refresh user data to include doctor profile
+        await refreshUser();
+        
+        Alert.alert(
+          isEditing ? 'Profile Updated Successfully!' : 'Profile Created Successfully!',
+          isEditing 
+            ? 'Your doctor profile has been updated successfully.'
+            : 'Your doctor profile has been created and is pending verification. You will be notified once it\'s approved.',
+          [
+            {
+              text: 'Continue',
+              onPress: () => navigation.navigate('MainDoctor'),
+            },
+          ]
+        );
+      } else {
+        throw new Error(response.message || `Failed to ${isEditing ? 'update' : 'create'} doctor profile`);
+      }
+    } catch (error) {
+      console.error('Doctor onboarding error:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to create doctor profile. Please try again.',
+        [{ text: 'OK' }]
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -537,11 +641,11 @@ export default function DoctorOnboardingScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('Auth')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={palette.text} />
         </TouchableOpacity>
         <Text style={[Typography.heading1, { color: palette.text }]}>
-          Dr. Onboarding
+          {isEditing ? 'Edit Doctor Profile' : 'Dr. Onboarding'}
         </Text>
         <View style={styles.placeholder} />
       </View>
@@ -564,10 +668,15 @@ export default function DoctorOnboardingScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.button, styles.primaryButton, { backgroundColor: palette.primary }]}
           onPress={nextStep}
+          disabled={isLoading}
         >
-          <Text style={[styles.buttonText, { color: '#fff' }]}>
-            {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={[styles.buttonText, { color: '#fff' }]}>
+              {currentStep === steps.length - 1 ? (isEditing ? 'Update Profile' : 'Complete Setup') : 'Next'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 

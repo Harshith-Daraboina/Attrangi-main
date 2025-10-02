@@ -29,6 +29,8 @@ import CaregiverOnboardingScreen from '../screens/Auth/CaregiverOnboardingScreen
 import ProfileScreen from '../screens/shared/ProfileScreen';
 import NotificationsScreen from '../screens/shared/NotificationsScreen';
 import HelpSupportScreen from '../screens/shared/HelpSupportScreen';
+import VerificationRequirementsScreen from '../screens/shared/VerificationRequirementsScreen';
+import ChangePasswordScreen from '../screens/shared/ChangePasswordScreen';
 
 // Patient Screens
 import PatientDashboard from '../screens/patient/PatientDashboard';
@@ -46,7 +48,7 @@ import CaregiverActivityScreen from '../screens/caregiver/CaregiverActivityScree
 import CaregiverCommunityScreen from '../screens/caregiver/CaregiverCommunityScreen';
 import CaregiverPaymentsScreen from '../screens/caregiver/CaregiverPaymentsScreen';
 
-// Therapist Screens
+// Doctor Screens
 import TherapistDashboard from '../screens/therapist/TherapistDashboard';
 import PatientManagementScreen from '../screens/therapist/PatientManagementScreen';
 import TherapistSessionScreen from '../screens/therapist/TherapistSessionScreen';
@@ -136,8 +138,8 @@ function CaregiverTabs() {
   );
 }
 
-// Therapist Tab Navigator
-function TherapistTabs() {
+// Doctor Tab Navigator
+function DoctorTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -192,22 +194,52 @@ export default function AppNavigator() {
     );
   }
 
-  // Determine initial route based on user role
+  // Determine initial route based on user role and profile completion
   const getInitialRoute = () => {
-    if (user?.role) {
-      switch (user.role) {
-        case 'patient':
-          return 'MainPatient';
-        case 'caregiver':
-          return 'MainCaregiver';
-        case 'therapist':
-        case 'doctor':
-          return 'MainTherapist';
-        default:
-          return 'RoleSelect';
+    if (user) {
+      // If user has no role, they need to select one
+      if (!user.role) {
+        return 'RoleSelect';
+      }
+      
+      // For doctors, check if they have a doctor profile
+      if (user.role === 'doctor') {
+        if (user.doctorProfile) {
+          return 'MainDoctor';
+        } else {
+          // Doctor without profile, go to doctor onboarding
+          return 'DoctorOnboarding';
+        }
+      }
+      
+      // For patients and caregivers, check if they have basic profile info
+      const hasBasicInfo = user.profile?.firstName || user.name;
+      
+      if (!user.isProfileComplete && !hasBasicInfo) {
+        // New user without basic info, go to appropriate onboarding
+        switch (user.role) {
+          case 'patient':
+            return 'PatientOnboarding';
+          case 'caregiver':
+            return 'CaregiverOnboarding';
+          default:
+            return 'PatientOnboarding'; // Default fallback
+        }
+      } else {
+        // User has role and basic info, go to main app
+        switch (user.role) {
+          case 'patient':
+            return 'MainPatient';
+          case 'caregiver':
+            return 'MainCaregiver';
+          case 'doctor':
+            return 'MainDoctor';
+          default:
+            return 'MainPatient'; // Default fallback
+        }
       }
     }
-    return 'RoleSelect';
+    return 'Auth'; // No user, go to auth
   };
 
   // Show main app if authenticated
@@ -243,7 +275,7 @@ export default function AppNavigator() {
       {/* Main app screens based on role */}
       <Stack.Screen name="MainPatient" component={PatientTabs} />
       <Stack.Screen name="MainCaregiver" component={CaregiverTabs} />
-      <Stack.Screen name="MainTherapist" component={TherapistTabs} />
+      <Stack.Screen name="MainDoctor" component={DoctorTabs} />
       
       {/* Individual screens accessible from anywhere */}
       <Stack.Screen name="PatientSession" component={PatientSessionScreen} />
@@ -266,6 +298,8 @@ export default function AppNavigator() {
       <Stack.Screen name="PreSessionTemplate" component={PatientPreSessionTemplateScreen} />
       <Stack.Screen name="WaitingScreen" component={WaitingScreen} />
       <Stack.Screen name="FeedbackScreen" component={FeedbackScreen} />
+      <Stack.Screen name="VerificationRequirements" component={VerificationRequirementsScreen} />
+      <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
     </Stack.Navigator>
   );
 }

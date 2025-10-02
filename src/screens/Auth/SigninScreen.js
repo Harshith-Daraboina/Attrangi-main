@@ -44,16 +44,19 @@ export default function SignInScreen({ navigation }) {
         // Set the role in theme context for navigation
         setRole(result.user.role);
         
-        // Navigate based on user role
-        if (result.user.role === 'doctor') {
-          navigation.navigate('MainDoctor');
-        } else if (result.user.role === 'patient') {
-          navigation.navigate('MainPatient');
-        } else if (result.user.role === 'caregiver') {
-          navigation.navigate('MainCaregiver');
-        } else {
-          // Default fallback
-          navigation.navigate('Home');
+        // Login should go directly to main app based on role
+        switch (result.user.role) {
+          case 'patient':
+            navigation.navigate('MainPatient');
+            break;
+          case 'caregiver':
+            navigation.navigate('MainCaregiver');
+            break;
+          case 'doctor':
+            navigation.navigate('MainDoctor');
+            break;
+          default:
+            navigation.navigate('MainPatient');
         }
       } else {
         Alert.alert('Login Failed', result.error || 'Invalid credentials. Please try again.');

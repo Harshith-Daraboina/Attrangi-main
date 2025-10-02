@@ -9,6 +9,7 @@ const router = express.Router();
 // Validation rules
 const updateProfileValidation = [
   body('name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
+  body('role').optional().isIn(['patient', 'doctor', 'caregiver']).withMessage('Invalid role'),
   body('profile.firstName').optional().trim().isLength({ max: 25 }).withMessage('First name cannot be more than 25 characters'),
   body('profile.lastName').optional().trim().isLength({ max: 25 }).withMessage('Last name cannot be more than 25 characters'),
   body('profile.phone').optional().isMobilePhone().withMessage('Please provide a valid phone number'),

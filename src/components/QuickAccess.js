@@ -41,11 +41,11 @@ const QuickAccess = ({ navigation }) => {
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.button, styles.therapistButton]} 
-          onPress={() => quickNavigate('therapist', 'MainTherapist')}
+          style={[styles.button, styles.doctorButton]} 
+          onPress={() => quickNavigate('doctor', 'MainDoctor')}
         >
           <Ionicons name="medical-outline" size={24} color={Colors.surface} />
-          <Text style={styles.buttonText}>Therapist Dashboard</Text>
+          <Text style={styles.buttonText}>Doctor Dashboard</Text>
         </TouchableOpacity>
       </View>
 
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   caregiverButton: {
     backgroundColor: '#5267df',
   },
-  therapistButton: {
+  doctorButton: {
     backgroundColor: '#2a7f62',
   },
   buttonText: {

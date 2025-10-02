@@ -120,21 +120,30 @@ const auth = {
         name: userData.firstName + ' ' + userData.lastName,
         email: userData.email,
         password: userData.password,
-        role: userData.role || 'patient'
+        role: userData.role
       };
       
       // Call backend API
       const response = await api.register(registrationData);
       
       if (response.success) {
-        // Store token and user data
+        // Store token
         await setStoredToken(response.token);
-        await setStoredUser(response.user);
         
         // Set token for future API calls
         api.setAuthToken(response.token);
         
-        currentUser = response.user;
+        // Fetch complete user data (should have no role initially)
+        const userResponse = await api.getCurrentUser();
+        if (userResponse.success) {
+          currentUser = userResponse.user;
+          await setStoredUser(currentUser);
+        } else {
+          // Fallback to basic user data if getCurrentUser fails
+          currentUser = response.user;
+          await setStoredUser(currentUser);
+        }
+        
         authState.isAuthenticated = true;
         authState.error = null;
         
@@ -200,14 +209,23 @@ const auth = {
       const response = await api.login(credentials);
       
       if (response.success) {
-        // Store token and user data
+        // Store token
         await setStoredToken(response.token);
-        await setStoredUser(response.user);
         
         // Set token for future API calls
         api.setAuthToken(response.token);
         
-        currentUser = response.user;
+        // Fetch complete user data including doctor profile
+        const userResponse = await api.getCurrentUser();
+        if (userResponse.success) {
+          currentUser = userResponse.user;
+          await setStoredUser(currentUser);
+        } else {
+          // Fallback to basic user data if getCurrentUser fails
+          currentUser = response.user;
+          await setStoredUser(currentUser);
+        }
+        
         authState.isAuthenticated = true;
         authState.error = null;
         
@@ -372,9 +390,19 @@ const auth = {
   // Refresh user data
   async refreshUser() {
     try {
-      // Return current user data
-      return currentUser;
+      // Fetch fresh user data from server
+      const response = await api.getCurrentUser();
+      
+      if (response.success) {
+        // Update current user with fresh data
+        currentUser = response.user;
+        await setStoredUser(currentUser);
+        return currentUser;
+      } else {
+        throw new Error(response.message || 'Failed to refresh user data');
+      }
     } catch (error) {
+      console.error('❌ Refresh user error:', error.message);
       throw error;
     }
   }

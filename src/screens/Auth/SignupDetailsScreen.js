@@ -86,20 +86,17 @@ export default function SignupDetailsScreen({ navigation, route }) {
       const result = await auth.register(userData);
       
       if (result.success) {
-        // Account created successfully, show success and navigate to login page
-        Alert.alert(
-          'Success!',
-          'Account created successfully! Please login with your email and password.',
-          [
-            {
-              text: 'Go to Login',
-              onPress: () => {
-                // Navigate to login page
-                navigation.navigate('SignIn');
-              }
-            }
-          ]
-        );
+        // Account created successfully, navigate to appropriate onboarding based on role
+        if (role === 'patient') {
+          navigation.navigate('PatientOnboarding');
+        } else if (role === 'doctor') {
+          navigation.navigate('DoctorOnboarding');
+        } else if (role === 'caregiver') {
+          navigation.navigate('CaregiverOnboarding');
+        } else {
+          // Default fallback
+          navigation.navigate('PatientOnboarding');
+        }
       } else {
         Alert.alert('Error', result.error || 'Failed to create account');
       }

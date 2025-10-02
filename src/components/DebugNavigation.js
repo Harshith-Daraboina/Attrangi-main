@@ -23,9 +23,8 @@ const DebugNavigation = ({ navigation }) => {
       case 'caregiver':
         navigation.navigate('MainCaregiver');
         break;
-      case 'therapist':
       case 'doctor':
-        navigation.navigate('MainTherapist');
+        navigation.navigate('MainDoctor');
         break;
       default:
         Alert.alert('Error', 'Please select a role first');
@@ -57,12 +56,6 @@ const DebugNavigation = ({ navigation }) => {
           <Text style={styles.buttonText}>Set as Caregiver</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={() => handleSetRole('therapist')}
-        >
-          <Text style={styles.buttonText}>Set as Therapist</Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.navigationContainer}>

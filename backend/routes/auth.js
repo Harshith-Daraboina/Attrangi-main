@@ -12,7 +12,7 @@ const registerValidation = [
   body('name').trim().isLength({ min: 2, max: 50 }).withMessage('Name must be between 2 and 50 characters'),
   body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('role').optional().isIn(['patient', 'doctor', 'caregiver', 'therapist']).withMessage('Invalid role')
+  body('role').optional().isIn(['patient', 'doctor', 'caregiver']).withMessage('Invalid role')
 ];
 
 const loginValidation = [
@@ -40,7 +40,7 @@ const verifyEmailValidation = [
 // @access  Public
 router.post('/register', registerValidation, validate, sanitizeInput, async (req, res) => {
   try {
-    const { name, email, password, role = 'patient' } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -51,12 +51,12 @@ router.post('/register', registerValidation, validate, sanitizeInput, async (req
       });
     }
 
-    // Create user
+    // Create user with selected role
     const user = new User({
       name,
       email,
       password,
-      role,
+      role: role || 'patient',
       authProvider: 'local'
     });
 
@@ -406,6 +406,51 @@ router.get('/me', authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error while fetching user data'
+    });
+  }
+});
+
+// @route   PUT /api/auth/change-password
+// @desc    Change user password
+// @access  Private
+router.put('/change-password', authenticateToken, [
+  body('currentPassword').notEmpty().withMessage('Current password is required'),
+  body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters long')
+], validate, sanitizeInput, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    // Find user
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Verify current password
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+    
+    // Update password
+    user.password = newPassword;
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while changing password'
     });
   }
 });

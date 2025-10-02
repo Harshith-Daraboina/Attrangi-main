@@ -41,10 +41,19 @@ app.use(compression());
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 200, // limit each IP to 200 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
 });
+
+// More lenient rate limiting for file uploads
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit each IP to 50 upload requests per windowMs
+  message: 'Too many upload requests from this IP, please try again later.'
+});
+
 app.use('/api/', limiter);
+app.use('/api/doctors/documents/upload', uploadLimiter);
 
 // CORS configuration
 app.use(cors({
@@ -58,8 +67,8 @@ app.use(cors({
 }));
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
 // Static files
 app.use('/uploads', express.static('uploads'));

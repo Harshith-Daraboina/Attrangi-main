@@ -119,9 +119,25 @@ const doctorSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'under_review', 'verified', 'rejected'],
+    default: 'pending'
+  },
+  verificationNotes: {
+    type: String,
+    maxlength: [500, 'Verification notes cannot be more than 500 characters']
+  },
+  verifiedAt: {
+    type: Date
+  },
   isAvailable: {
     type: Boolean,
     default: true
+  },
+  isActiveToday: {
+    type: Boolean,
+    default: false
   },
   consultationTypes: [{
     type: String,
@@ -135,6 +151,77 @@ const doctorSchema = new mongoose.Schema({
   currentPatientsCount: {
     type: Number,
     default: 0
+  },
+  // Financial/Payment Details
+  paymentDetails: {
+    upiId: {
+      type: String,
+      trim: true
+    },
+    phonePeId: {
+      type: String,
+      trim: true
+    },
+    bankAccount: {
+      accountNumber: {
+        type: String,
+        trim: true
+      },
+      ifscCode: {
+        type: String,
+        trim: true
+      },
+      bankName: {
+        type: String,
+        trim: true
+      },
+      accountHolderName: {
+        type: String,
+        trim: true
+      }
+    },
+    panNumber: {
+      type: String,
+      trim: true,
+      uppercase: true
+    },
+    gstNumber: {
+      type: String,
+      trim: true
+    }
+  },
+  // Document verification
+  documents: {
+    licenseDocument: {
+      fileName: String,
+      cloudinaryUrl: String,
+      cloudinaryPublicId: String,
+      uploadedAt: Date,
+      verified: { type: Boolean, default: false }
+    },
+    identityDocument: {
+      fileName: String,
+      cloudinaryUrl: String,
+      cloudinaryPublicId: String,
+      uploadedAt: Date,
+      verified: { type: Boolean, default: false }
+    },
+    degreeCertificate: {
+      fileName: String,
+      cloudinaryUrl: String,
+      cloudinaryPublicId: String,
+      uploadedAt: Date,
+      verified: { type: Boolean, default: false }
+    }
+  },
+  // Profile completion tracking
+  profileCompletion: {
+    personalInfo: { type: Boolean, default: false },
+    professionalDetails: { type: Boolean, default: false },
+    specialization: { type: Boolean, default: false },
+    availability: { type: Boolean, default: false },
+    paymentDetails: { type: Boolean, default: false },
+    documents: { type: Boolean, default: false }
   }
 }, {
   timestamps: true
@@ -182,6 +269,72 @@ doctorSchema.methods.isAvailableAt = function(day, time) {
   return dayAvailability.some(slot => {
     return time >= slot.start && time <= slot.end;
   });
+};
+
+// Method to calculate profile completion percentage
+doctorSchema.methods.getProfileCompletionPercentage = function() {
+  // Only count core requirements (documents are optional)
+  const coreCompletionFields = [
+    this.profileCompletion.personalInfo,
+    this.profileCompletion.professionalDetails,
+    this.profileCompletion.specialization,
+    this.profileCompletion.availability,
+    this.profileCompletion.paymentDetails
+  ];
+  
+  const completedFields = coreCompletionFields.filter(field => field === true).length;
+  return Math.round((completedFields / coreCompletionFields.length) * 100);
+};
+
+// Method to update profile completion status
+doctorSchema.methods.updateProfileCompletion = function() {
+  // Personal Info
+  this.profileCompletion.personalInfo = !!(this.user && this.user.name && this.user.email);
+  
+  // Professional Details
+  this.profileCompletion.professionalDetails = !!(this.licenseNumber && this.experience && this.education && this.education.length > 0);
+  
+  // Specialization
+  this.profileCompletion.specialization = !!(this.specialization && this.languages && this.languages.length > 0);
+  
+  // Availability
+  const hasAvailability = Object.values(this.availability).some(daySlots => daySlots && daySlots.length > 0);
+  this.profileCompletion.availability = hasAvailability;
+  
+  // Payment Details
+  const hasPaymentDetails = !!(this.paymentDetails && (
+    this.paymentDetails.upiId || 
+    this.paymentDetails.phonePeId || 
+    (this.paymentDetails.bankAccount && this.paymentDetails.bankAccount.accountNumber)
+  ));
+  this.profileCompletion.paymentDetails = hasPaymentDetails;
+  
+  // Documents (optional - check if any documents are uploaded)
+  const hasDocuments = !!(this.documents && (
+    this.documents.licenseDocument.cloudinaryUrl ||
+    this.documents.identityDocument.cloudinaryUrl ||
+    this.documents.degreeCertificate.cloudinaryUrl
+  ));
+  this.profileCompletion.documents = hasDocuments;
+  
+  // Auto-verify if all core requirements are met (excluding documents)
+  const coreRequirements = [
+    this.profileCompletion.personalInfo,
+    this.profileCompletion.professionalDetails,
+    this.profileCompletion.specialization,
+    this.profileCompletion.availability,
+    this.profileCompletion.paymentDetails
+  ];
+  
+  const allCoreRequirementsMet = coreRequirements.every(req => req === true);
+  
+  if (allCoreRequirementsMet && !this.isVerified) {
+    this.isVerified = true;
+    this.verificationStatus = 'verified';
+    this.verifiedAt = new Date();
+  }
+  
+  return this.save();
 };
 
 // Populate user data when querying

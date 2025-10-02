@@ -37,12 +37,12 @@ export default function RoleSelectScreen({ navigation }) {
       features: ['Patient Monitoring', 'Session Support', 'Community'],
     },
     {
-      id: 'therapist',
-      title: 'Therapist',
-      description: 'Manage your practice',
+      id: 'doctor',
+      title: 'Doctor',
+      description: 'Provide professional medical care',
       icon: 'medical-outline',
-      color: '#2a7f62',
-      features: ['Patient Management', 'Session Notes', 'Resources'],
+      color: '#e74c3c',
+      features: ['Patient Consultations', 'Medical Diagnosis', 'Prescriptions'],
     },
   ];
 
@@ -58,9 +58,6 @@ export default function RoleSelectScreen({ navigation }) {
           break;
         case 'caregiver':
           navigation.navigate('CaregiverOnboarding');
-          break;
-        case 'therapist':
-          navigation.navigate('DoctorOnboarding');
           break;
         case 'doctor':
           navigation.navigate('DoctorOnboarding');
@@ -78,6 +75,36 @@ export default function RoleSelectScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => {
+            // Navigate to appropriate screen based on user state
+            if (user?.role && user?.doctorProfile) {
+              // User has a role and doctor profile, go to main app
+              navigation.navigate('MainDoctor');
+            } else if (user?.role) {
+              // User has a role, go to main app based on role
+              switch (user.role) {
+                case 'patient':
+                  navigation.navigate('MainPatient');
+                  break;
+                case 'caregiver':
+                  navigation.navigate('MainCaregiver');
+                  break;
+                case 'doctor':
+                  navigation.navigate('MainDoctor');
+                  break;
+                default:
+                  navigation.navigate('Auth');
+              }
+            } else {
+              // No role, go to auth
+              navigation.navigate('Auth');
+            }
+          }}
+        >
+          <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+        </TouchableOpacity>
         <Text style={styles.title}>Welcome to Attrangi</Text>
         <Text style={styles.subtitle}>Choose your role to get started</Text>
       </View>
@@ -86,6 +113,8 @@ export default function RoleSelectScreen({ navigation }) {
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={false}
       >
         {roles.map((role) => (
           <TouchableOpacity
@@ -149,6 +178,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Spacing.xl,
     paddingTop: Spacing.xl * 2,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    top: Spacing.xl * 2,
+    left: Spacing.xl,
+    padding: Spacing.sm,
+    zIndex: 1,
   },
   title: {
     ...Typography.heading1,
@@ -165,8 +202,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xl,
+    paddingBottom: Spacing.xl * 2,
     gap: Spacing.lg,
+    flexGrow: 1,
   },
   roleCard: {
     backgroundColor: Colors.surface,

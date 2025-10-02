@@ -168,7 +168,6 @@ export const AuthProvider = ({ children }) => {
 
   const isPatient = () => hasRole('patient');
   const isCaregiver = () => hasRole('caregiver');
-  const isTherapist = () => hasRole('therapist');
   const isDoctor = () => hasRole('doctor');
 
   const value = {
@@ -192,7 +191,6 @@ export const AuthProvider = ({ children }) => {
     hasRole,
     isPatient,
     isCaregiver,
-    isTherapist,
     isDoctor,
   };
 

@@ -9,18 +9,23 @@ import {
   Alert,
   Image,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../../styles/designSystem';
 import { useThemeSettings } from '../../styles/ThemeContext';
 import { convertToISOFormat, convertToDisplayFormat } from '../../utils/dateUtils';
+import api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 export default function CaregiverOnboardingScreen({ navigation }) {
   const { palette } = useThemeSettings();
+  const { refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -52,8 +57,6 @@ export default function CaregiverOnboardingScreen({ navigation }) {
 
   const steps = [
     'Personal Information',
-    'Patient Connection',
-    'Medical Notes',
     'Profile Picture',
   ];
 
@@ -74,21 +77,75 @@ export default function CaregiverOnboardingScreen({ navigation }) {
     setShowDatePicker(true);
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
+      // Complete onboarding - save profile data
+      await completeOnboarding();
+    }
+  };
+
+  const completeOnboarding = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Prepare profile data for API
+      const profileData = {
+        profile: {
+          firstName: formData.fullName.split(' ')[0] || '',
+          lastName: formData.fullName.split(' ').slice(1).join(' ') || '',
+          dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : null,
+          gender: formData.gender,
+          phone: formData.phone,
+          bio: `Caregiver for ${formData.relationToPatient}`,
+          preferences: {
+            notifications: {
+              email: true,
+              push: true,
+              sms: false
+            },
+            privacy: {
+              profileVisibility: 'private',
+              showOnlineStatus: true
+            }
+          }
+        },
+        isProfileComplete: true
+      };
+
+      // Save profile to backend
+      const response = await api.updateProfile(profileData);
+      
+      if (response.success) {
+        // Refresh user data
+        await refreshUser();
+        
+        Alert.alert(
+          'Welcome to Attrangi!',
+          'Your caregiver profile has been created successfully. You can now support your loved one on their wellness journey.',
+          [
+            {
+              text: 'Continue',
+              onPress: () => navigation.navigate('MainCaregiver'),
+            },
+          ]
+        );
+      } else {
+        throw new Error(response.message || 'Failed to save profile');
+      }
+    } catch (error) {
+      console.error('Caregiver onboarding completion error:', error);
       Alert.alert(
-        'Welcome to Attrangi!',
-        'Your caregiver profile has been created successfully. You can now support your loved one on their wellness journey.',
+        'Error',
+        'Failed to complete profile setup. Please try again.',
         [
-          {
-            text: 'Continue',
-            onPress: () => navigation.navigate('MainCaregiver'),
-          },
+          { text: 'Retry', onPress: () => completeOnboarding() },
+          { text: 'Skip for now', onPress: () => navigation.navigate('MainCaregiver') }
         ]
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -407,10 +464,6 @@ export default function CaregiverOnboardingScreen({ navigation }) {
       case 0:
         return renderPersonalInfo();
       case 1:
-        return renderPatientConnection();
-      case 2:
-        return renderMedicalNotes();
-      case 3:
         return renderProfilePicture();
       default:
         return renderPersonalInfo();
@@ -420,7 +473,7 @@ export default function CaregiverOnboardingScreen({ navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('Auth')} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={palette.text} />
         </TouchableOpacity>
         <Text style={[Typography.heading1, { color: palette.text }]}>
@@ -447,10 +500,15 @@ export default function CaregiverOnboardingScreen({ navigation }) {
         <TouchableOpacity
           style={[styles.button, styles.primaryButton, { backgroundColor: palette.primary }]}
           onPress={nextStep}
+          disabled={isLoading}
         >
-          <Text style={[styles.buttonText, { color: '#fff' }]}>
-            {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={[styles.buttonText, { color: '#fff' }]}>
+              {currentStep === steps.length - 1 ? 'Complete Setup' : 'Next'}
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
 

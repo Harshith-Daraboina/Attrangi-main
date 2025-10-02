@@ -84,12 +84,6 @@ export default function DebugScreen({ navigation }) {
           >
             <Text style={styles.roleButtonText}>Caregiver</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.roleButton, styles.therapistButton]} 
-            onPress={() => handleSetRole('therapist')}
-          >
-            <Text style={styles.roleButtonText}>Therapist</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -109,10 +103,10 @@ export default function DebugScreen({ navigation }) {
           <Text style={styles.navButtonText}>→ Caregiver Dashboard</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.navButton, styles.therapistButton]} 
-          onPress={() => handleNavigate('MainTherapist')}
+          style={[styles.navButton, styles.doctorButton]} 
+          onPress={() => handleNavigate('MainDoctor')}
         >
-          <Text style={styles.navButtonText}>→ Therapist Dashboard</Text>
+          <Text style={styles.navButtonText}>→ Doctor Dashboard</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.navButton, styles.primaryButton]} 
@@ -193,7 +187,7 @@ const styles = StyleSheet.create({
   caregiverButton: {
     backgroundColor: '#5267df',
   },
-  therapistButton: {
+  doctorButton: {
     backgroundColor: '#2a7f62',
   },
   primaryButton: {
