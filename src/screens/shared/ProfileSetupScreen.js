@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../../styles/designSystem';
 import { useThemeSettings } from '../../styles/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import api from '../../services/api';
 
 export default function ProfileSetupScreen({ navigation, route }) {
   const { palette } = useThemeSettings();
+  const { user, refreshUser } = useAuth();
   const { userRole } = route.params || { userRole: 'patient' };
   
   const [formData, setFormData] = useState({
@@ -39,21 +42,88 @@ export default function ProfileSetupScreen({ navigation, route }) {
     }),
   });
 
+  // Load existing user data when component mounts
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: user.name || '',
+        email: user.email || '',
+        phone: user.profile?.phone || '',
+        bio: user.profile?.bio || '',
+        profilePicture: user.profile?.profilePicture || null,
+        // Load role-specific data
+        ...(userRole === 'patient' && {
+          currentChallenges: user.profile?.currentChallenges || [],
+          emergencyContact: {
+            name: user.profile?.emergencyContact?.name || '',
+            phone: user.profile?.emergencyContact?.phone || ''
+          },
+        }),
+        ...(userRole === 'caregiver' && {
+          relationToPatient: user.profile?.relationToPatient || '',
+          patientId: user.profile?.patientId || '',
+        }),
+      }));
+    }
+  }, [user, userRole]);
+
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    Alert.alert(
-      'Profile Updated',
-      'Your profile has been updated successfully.',
-      [
-        {
-          text: 'Continue',
-          onPress: () => navigation.goBack(),
+  const handleSave = async () => {
+    try {
+      // Prepare profile data for API
+      const profileData = {
+        name: formData.fullName,
+        profile: {
+          firstName: formData.fullName.split(' ')[0] || '',
+          lastName: formData.fullName.split(' ').slice(1).join(' ') || '',
+          phone: formData.phone,
+          bio: formData.bio,
+          profilePicture: formData.profilePicture,
+          // Role-specific fields
+          ...(userRole === 'patient' && {
+            currentChallenges: formData.currentChallenges,
+            emergencyContact: formData.emergencyContact,
+          }),
+          ...(userRole === 'caregiver' && {
+            relationToPatient: formData.relationToPatient,
+            patientId: formData.patientId,
+          }),
         },
-      ]
-    );
+        isProfileComplete: true
+      };
+
+      // Save profile to backend
+      const response = await api.updateProfile(profileData);
+      
+      if (response.success) {
+        // Refresh user data to reflect changes
+        await refreshUser();
+        
+        Alert.alert(
+          'Profile Updated',
+          'Your profile has been updated successfully.',
+          [
+            {
+              text: 'Continue',
+              onPress: () => navigation.goBack(),
+            },
+          ]
+        );
+      } else {
+        throw new Error(response.message || 'Failed to save profile');
+      }
+    } catch (error) {
+      console.error('Profile update error:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to update profile. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const renderRoleSpecificFields = () => {

@@ -158,6 +158,10 @@ const doctorSchema = new mongoose.Schema({
       type: String,
       trim: true
     },
+    platform: {
+      type: String,
+      trim: true
+    },
     phonePeId: {
       type: String,
       trim: true
@@ -303,7 +307,7 @@ doctorSchema.methods.updateProfileCompletion = function() {
   
   // Payment Details
   const hasPaymentDetails = !!(this.paymentDetails && (
-    this.paymentDetails.upiId || 
+    (this.paymentDetails.upiId && this.paymentDetails.platform) || 
     this.paymentDetails.phonePeId || 
     (this.paymentDetails.bankAccount && this.paymentDetails.bankAccount.accountNumber)
   ));

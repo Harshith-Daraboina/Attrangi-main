@@ -55,10 +55,17 @@ router.put('/profile', updateProfileValidation, validate, sanitizeInput, async (
   try {
     const updates = req.body;
     
+    // Get current user data to check existing profile completion
+    const currentUser = await User.findById(req.user._id);
+    
     // Check if profile is being completed
     const requiredFields = ['profile.firstName', 'profile.lastName', 'profile.dateOfBirth', 'profile.gender'];
     const hasRequiredFields = requiredFields.every(field => {
-      const value = field.split('.').reduce((obj, key) => obj?.[key], updates);
+      // Check both the update data and existing user data
+      const updateValue = field.split('.').reduce((obj, key) => obj?.[key], updates);
+      const existingValue = field.split('.').reduce((obj, key) => obj?.[key], currentUser);
+      
+      const value = updateValue !== undefined ? updateValue : existingValue;
       return value !== undefined && value !== null && value !== '';
     });
     

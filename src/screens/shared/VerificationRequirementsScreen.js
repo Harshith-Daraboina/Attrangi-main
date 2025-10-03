@@ -28,6 +28,7 @@ export default function VerificationRequirementsScreen({ navigation }) {
   });
   const [paymentDetails, setPaymentDetails] = useState({
     upiId: '',
+    platform: '',
     phonePeId: '',
     panNumber: '',
     gstNumber: '',
@@ -38,6 +39,16 @@ export default function VerificationRequirementsScreen({ navigation }) {
       accountHolderName: ''
     }
   });
+  const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
+
+  const paymentPlatforms = [
+    'PhonePe',
+    'Google Pay',
+    'Paytm',
+    'Amazon Pay',
+    'BHIM',
+    'Other',
+  ];
 
   const user = {
     name: authUser?.name || 'John Doe',
@@ -46,9 +57,10 @@ export default function VerificationRequirementsScreen({ navigation }) {
     doctorProfile: authUser?.doctorProfile || null,
   };
 
-  // Load existing documents on component mount
+  // Load existing documents and payment details on component mount
   useEffect(() => {
     loadDocuments();
+    loadPaymentDetails();
   }, []);
 
   const loadDocuments = async () => {
@@ -63,6 +75,26 @@ export default function VerificationRequirementsScreen({ navigation }) {
       }
     } catch (error) {
       console.error('Error loading documents:', error);
+    }
+  };
+
+  const loadPaymentDetails = () => {
+    // Load payment details from user profile
+    if (user.doctorProfile?.paymentDetails) {
+      const existingPaymentDetails = user.doctorProfile.paymentDetails;
+      setPaymentDetails({
+        upiId: existingPaymentDetails.upiId || '',
+        platform: existingPaymentDetails.platform || '',
+        phonePeId: existingPaymentDetails.phonePeId || '',
+        panNumber: existingPaymentDetails.panNumber || '',
+        gstNumber: existingPaymentDetails.gstNumber || '',
+        bankAccount: {
+          accountNumber: existingPaymentDetails.bankAccount?.accountNumber || '',
+          ifscCode: existingPaymentDetails.bankAccount?.ifscCode || '',
+          bankName: existingPaymentDetails.bankAccount?.bankName || '',
+          accountHolderName: existingPaymentDetails.bankAccount?.accountHolderName || ''
+        }
+      });
     }
   };
 
@@ -123,7 +155,7 @@ export default function VerificationRequirementsScreen({ navigation }) {
         key: 'paymentDetails', 
         title: 'Payment Details', 
         completed: completion.paymentDetails,
-        description: 'UPI, PhonePe, or bank account details',
+        description: 'UPI ID and platform for receiving payments',
         action: 'Edit'
       },
       { 
@@ -244,6 +276,7 @@ export default function VerificationRequirementsScreen({ navigation }) {
   const handleRequirementAction = (requirement) => {
     switch (requirement.key) {
       case 'paymentDetails':
+        loadPaymentDetails(); // Reload payment details before showing modal
         setShowPaymentModal(true);
         break;
       case 'documents':
@@ -268,13 +301,20 @@ export default function VerificationRequirementsScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Status Bar Spacer */}
+      <View style={styles.statusBarSpacer} />
+      
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Verification Requirements</Text>
-        <View style={styles.placeholder} />
+        <TouchableOpacity style={styles.activeButton}>
+          <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+          <Text style={styles.activeButtonText}>Active</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.scrollView}>
@@ -366,6 +406,54 @@ export default function VerificationRequirementsScreen({ navigation }) {
                   placeholder="yourname@upi"
                   placeholderTextColor={Colors.textTertiary}
                 />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>UPI Platform</Text>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setShowPlatformDropdown(!showPlatformDropdown)}
+                >
+                  <Text style={[
+                    styles.dropdownButtonText,
+                    { color: paymentDetails.platform ? Colors.textPrimary : Colors.textTertiary }
+                  ]}>
+                    {paymentDetails.platform || 'Select UPI Platform'}
+                  </Text>
+                  <Ionicons 
+                    name={showPlatformDropdown ? "chevron-up" : "chevron-down"} 
+                    size={20} 
+                    color={Colors.textSecondary} 
+                  />
+                </TouchableOpacity>
+                
+                {showPlatformDropdown && (
+                  <View style={styles.dropdownList}>
+                    {paymentPlatforms.map((platform, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.dropdownItem,
+                          { backgroundColor: paymentDetails.platform === platform ? Colors.primary + '20' : Colors.surface }
+                        ]}
+                        onPress={() => {
+                          setPaymentDetails(prev => ({ ...prev, platform }));
+                          setShowPlatformDropdown(false);
+                        }}
+                      >
+                        <Text style={[
+                          styles.dropdownItemText,
+                          { color: paymentDetails.platform === platform ? Colors.primary : Colors.textPrimary }
+                        ]}>
+                          {platform}
+                        </Text>
+                        {paymentDetails.platform === platform && (
+                          <Ionicons name="checkmark" size={16} color={Colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
               
               <View style={styles.inputGroup}>
@@ -619,7 +707,7 @@ export default function VerificationRequirementsScreen({ navigation }) {
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -628,91 +716,132 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  statusBarSpacer: {
+    height: 44, // Safe area for status bar
+    backgroundColor: Colors.surface,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    ...Shadows.sm,
   },
   backButton: {
     padding: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.background,
   },
   headerTitle: {
-    ...Typography.heading3,
-    fontWeight: '600',
+    ...Typography.heading2,
+    fontWeight: '700',
     color: Colors.textPrimary,
+    textAlign: 'center',
+    flex: 1,
   },
-  placeholder: {
-    width: 40,
+  activeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.success + '15',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.success + '30',
+  },
+  activeButtonText: {
+    ...Typography.caption,
+    color: Colors.success,
+    fontWeight: '600',
+    marginLeft: Spacing.xs,
   },
   scrollView: {
     flex: 1,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
   },
   progressSection: {
     backgroundColor: Colors.surface,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    ...Shadows.sm,
+    padding: Spacing.xl,
+    marginBottom: Spacing.xl,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.md,
+    borderWidth: 1,
+    borderColor: Colors.border + '50',
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   progressTitle: {
-    ...Typography.body,
-    fontWeight: '600',
+    ...Typography.heading3,
+    fontWeight: '700',
     color: Colors.textPrimary,
   },
   progressPercentage: {
-    ...Typography.heading3,
-    fontWeight: '700',
+    ...Typography.heading1,
+    fontWeight: '800',
     color: Colors.primary,
+    textShadowColor: Colors.primary + '30',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   progressBar: {
-    height: 8,
+    height: 12,
     backgroundColor: Colors.border,
-    borderRadius: 4,
-    marginBottom: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
+    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: Colors.primary,
-    borderRadius: 4,
+    borderRadius: BorderRadius.lg,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   progressSubtitle: {
-    ...Typography.caption,
+    ...Typography.body,
     color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   requirementsSection: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    ...Shadows.sm,
+    borderRadius: BorderRadius.lg,
+    ...Shadows.md,
+    borderWidth: 1,
+    borderColor: Colors.border + '50',
+    marginBottom: Spacing.xl,
   },
   requirementsTitle: {
     ...Typography.heading3,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.textPrimary,
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    textAlign: 'center',
   },
   requirementItem: {
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.border + '30',
   },
   requirementContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: Spacing.lg,
+    minHeight: 80,
   },
   requirementHeader: {
     flexDirection: 'row',
@@ -720,27 +849,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   requirementTextContainer: {
-    marginLeft: Spacing.md,
+    marginLeft: Spacing.lg,
     flex: 1,
   },
   requirementTitle: {
     ...Typography.body,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: Spacing.xs,
+    fontSize: 16,
   },
   requirementDescription: {
     ...Typography.caption,
     color: Colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 18,
   },
   actionButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    minWidth: 100,
+    alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   actionButtonText: {
     ...Typography.caption,
     color: Colors.surface,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 14,
   },
   // Modal Styles
   modalOverlay: {
@@ -749,88 +889,163 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
+    paddingHorizontal: Spacing.lg,
   },
   modalContent: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    width: '90%',
-    maxHeight: '80%',
-    ...Shadows.lg,
+    borderRadius: BorderRadius.xl,
+    width: '100%',
+    maxHeight: '85%',
+    ...Shadows.xl,
+    borderWidth: 1,
+    borderColor: Colors.border + '50',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
   },
   modalTitle: {
-    ...Typography.heading3,
-    fontWeight: '600',
+    ...Typography.heading2,
+    fontWeight: '700',
     color: Colors.textPrimary,
   },
   modalBody: {
-    maxHeight: 400,
-    padding: Spacing.lg,
+    maxHeight: 450,
+    padding: Spacing.xl,
   },
   modalFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
+    backgroundColor: Colors.background,
+    borderBottomLeftRadius: BorderRadius.xl,
+    borderBottomRightRadius: BorderRadius.xl,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: Spacing.md,
-    marginRight: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
+    paddingVertical: Spacing.lg,
+    marginRight: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
     borderColor: Colors.border,
     alignItems: 'center',
+    backgroundColor: Colors.surface,
   },
   cancelButtonText: {
     ...Typography.body,
     color: Colors.textSecondary,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 16,
   },
   saveButton: {
     flex: 1,
-    paddingVertical: Spacing.md,
-    marginLeft: Spacing.sm,
-    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.lg,
+    marginLeft: Spacing.md,
+    borderRadius: BorderRadius.lg,
     backgroundColor: Colors.primary,
     alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   saveButtonText: {
     ...Typography.body,
     color: Colors.surface,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 16,
   },
   // Input Styles
   inputGroup: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   inputLabel: {
-    ...Typography.caption,
+    ...Typography.body,
     color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
-    fontWeight: '600',
+    marginBottom: Spacing.sm,
+    fontWeight: '700',
+    fontSize: 16,
   },
   input: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: Colors.border,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     backgroundColor: Colors.surface,
     ...Typography.body,
     color: Colors.textPrimary,
+    fontSize: 16,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  // Dropdown Styles
+  dropdownButton: {
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  dropdownButtonText: {
+    ...Typography.body,
+    flex: 1,
+    fontSize: 16,
+  },
+  dropdownList: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.surface,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    borderRadius: BorderRadius.lg,
+    marginTop: 4,
+    zIndex: 1000,
+    maxHeight: 250,
+    ...Shadows.xl,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border + '30',
+  },
+  dropdownItemText: {
+    ...Typography.body,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
   },
   sectionTitle: {
     ...Typography.body,
@@ -847,23 +1062,25 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   documentSection: {
-    marginBottom: Spacing.lg,
-    padding: Spacing.md,
+    marginBottom: Spacing.xl,
+    padding: Spacing.lg,
     backgroundColor: Colors.background,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
     borderColor: Colors.border,
+    ...Shadows.sm,
   },
   documentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   documentTitle: {
     ...Typography.body,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.textPrimary,
+    fontSize: 16,
   },
   deleteButton: {
     padding: Spacing.xs,
@@ -890,18 +1107,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Spacing.md,
+    padding: Spacing.lg,
     borderWidth: 2,
     borderColor: Colors.primary,
     borderStyle: 'dashed',
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     backgroundColor: Colors.primary + '10',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
   uploadButtonText: {
-    ...Typography.caption,
+    ...Typography.body,
     color: Colors.primary,
-    fontWeight: '600',
-    marginLeft: Spacing.sm,
+    fontWeight: '700',
+    marginLeft: Spacing.md,
+    fontSize: 16,
   },
   documentNote: {
     flexDirection: 'row',

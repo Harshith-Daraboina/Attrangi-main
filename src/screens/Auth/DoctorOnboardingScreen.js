@@ -42,6 +42,10 @@ export default function DoctorOnboardingScreen({ navigation }) {
       weekdays: [],
       timeSlots: [],
     },
+    paymentDetails: {
+      upiId: '',
+      platform: '', // phonepe, gpay, paytm, etc.
+    },
     profilePicture: null,
   });
 
@@ -69,6 +73,10 @@ export default function DoctorOnboardingScreen({ navigation }) {
             profile.availability[day] && profile.availability[day].length > 0
           ),
           timeSlots: [],
+        },
+        paymentDetails: {
+          upiId: profile.paymentDetails?.upiId || '',
+          platform: profile.paymentDetails?.platform || '',
         },
         profilePicture: null,
       });
@@ -101,6 +109,15 @@ export default function DoctorOnboardingScreen({ navigation }) {
     'Punjabi',
   ];
 
+  const paymentPlatforms = [
+    'PhonePe',
+    'Google Pay',
+    'Paytm',
+    'Amazon Pay',
+    'BHIM',
+    'Other',
+  ];
+
   const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const timeSlots = [
     '9:00 AM - 10:00 AM',
@@ -118,6 +135,7 @@ export default function DoctorOnboardingScreen({ navigation }) {
     'Professional Details',
     'Specialization & Languages',
     'Availability & Fees',
+    'Payment Details',
     'Profile Picture',
   ];
 
@@ -142,6 +160,13 @@ export default function DoctorOnboardingScreen({ navigation }) {
     setFormData(prev => ({
       ...prev,
       availability: { ...prev.availability, [field]: value },
+    }));
+  };
+
+  const updatePaymentDetails = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      paymentDetails: { ...prev.paymentDetails, [field]: value },
     }));
   };
 
@@ -192,12 +217,16 @@ export default function DoctorOnboardingScreen({ navigation }) {
         consultationTypes: ['video', 'in-person'],
         maxPatientsPerDay: 10,
         verificationStatus: 'pending',
+        paymentDetails: {
+          upiId: formData.paymentDetails.upiId,
+          platform: formData.paymentDetails.platform,
+        },
         profileCompletion: {
           personalInfo: true,
           professionalDetails: true,
           specialization: true,
           availability: true,
-          paymentDetails: false,
+          paymentDetails: true,
           documents: true // Optional, always true
         }
       };
@@ -211,6 +240,19 @@ export default function DoctorOnboardingScreen({ navigation }) {
       }
       
       if (response.success) {
+        // If editing and payment details are provided, update them separately
+        if (isEditing && formData.paymentDetails.upiId && formData.paymentDetails.platform) {
+          try {
+            await api.updateDoctorPaymentDetails({
+              upiId: formData.paymentDetails.upiId,
+              platform: formData.paymentDetails.platform,
+            });
+          } catch (paymentError) {
+            console.error('Payment details update error:', paymentError);
+            // Don't fail the entire process if payment update fails
+          }
+        }
+        
         // Refresh user data to include doctor profile
         await refreshUser();
         
@@ -594,6 +636,78 @@ export default function DoctorOnboardingScreen({ navigation }) {
     </View>
   );
 
+  const renderPaymentDetails = () => (
+    <View style={styles.stepContent}>
+      <Text style={[Typography.heading2, { color: palette.text }]}>
+        Payment Details
+      </Text>
+      <Text style={[Typography.caption, { marginBottom: Spacing.lg }]}>
+        Set up your payment information to receive payments from patients
+      </Text>
+
+      <View style={styles.inputGroup}>
+        <Text style={[Typography.label, { color: palette.text }]}>
+          UPI ID
+        </Text>
+        <TextInput
+          style={[styles.input, { borderColor: Colors.border }]}
+          value={formData.paymentDetails.upiId}
+          onChangeText={value => updatePaymentDetails('upiId', value)}
+          placeholder="Enter your UPI ID (e.g., yourname@paytm)"
+          placeholderTextColor={Colors.textTertiary}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <Text style={[Typography.caption, { color: Colors.textSecondary, marginTop: Spacing.xs }]}>
+          This will be used to receive payments from patients
+        </Text>
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={[Typography.label, { color: palette.text }]}>
+          UPI Platform
+        </Text>
+        <View style={styles.optionsContainer}>
+          {paymentPlatforms.map(platform => (
+            <TouchableOpacity
+              key={platform}
+              style={[
+                styles.optionChip,
+                {
+                  backgroundColor: formData.paymentDetails.platform === platform
+                    ? palette.primary
+                    : '#fff',
+                  borderColor: formData.paymentDetails.platform === platform
+                    ? palette.primary
+                    : Colors.border,
+                },
+              ]}
+              onPress={() => updatePaymentDetails('platform', platform)}
+            >
+              <Text
+                style={[
+                  styles.optionText,
+                  {
+                    color: formData.paymentDetails.platform === platform ? '#fff' : palette.text,
+                  },
+                ]}
+              >
+                {platform}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <View style={[styles.infoBox, { backgroundColor: palette.primary + '10', borderColor: palette.primary + '30' }]}>
+        <Ionicons name="information-circle-outline" size={20} color={palette.primary} />
+        <Text style={[styles.infoText, { color: palette.text }]}>
+          Your payment details are secure and encrypted. You can update them anytime from your profile.
+        </Text>
+      </View>
+    </View>
+  );
+
   const renderProfilePicture = () => (
     <View style={styles.stepContent}>
       <Text style={[Typography.heading2, { color: palette.text }]}>
@@ -632,6 +746,8 @@ export default function DoctorOnboardingScreen({ navigation }) {
       case 3:
         return renderAvailability();
       case 4:
+        return renderPaymentDetails();
+      case 5:
         return renderProfilePicture();
       default:
         return renderPersonalInfo();
@@ -855,5 +971,19 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  infoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginTop: Spacing.lg,
+  },
+  infoText: {
+    flex: 1,
+    marginLeft: Spacing.sm,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

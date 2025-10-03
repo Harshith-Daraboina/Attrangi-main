@@ -302,6 +302,7 @@ router.put('/availability', authenticateToken, authorize('doctor'), sanitizeInpu
 // @access  Private (Doctor only)
 router.put('/payment-details', authenticateToken, authorize('doctor'), [
   body('upiId').optional().isString().withMessage('UPI ID must be a string'),
+  body('platform').optional().isString().withMessage('Platform must be a string'),
   body('phonePeId').optional().isString().withMessage('PhonePe ID must be a string'),
   body('panNumber').optional().isString().withMessage('PAN number must be a string'),
   body('gstNumber').optional().isString().withMessage('GST number must be a string'),

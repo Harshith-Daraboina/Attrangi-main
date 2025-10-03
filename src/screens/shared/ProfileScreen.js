@@ -274,6 +274,11 @@ export default function ProfileScreen({ navigation }) {
                 <Text style={styles.viewRequirementsText}>View Requirements</Text>
                 <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
               </TouchableOpacity>
+            ) : user.isProfileComplete ? (
+              <View style={styles.profileCompleteContainer}>
+                <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                <Text style={styles.profileCompleteText}>Profile Complete</Text>
+              </View>
             ) : (
               <TouchableOpacity 
                 style={styles.viewRequirementsButton}
@@ -600,6 +605,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingHorizontal: Spacing.md,
   },
   header: {
     alignItems: 'center',
@@ -674,24 +680,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     marginBottom: Spacing.md,
     paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   sectionTitle: {
     ...Typography.heading3,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    minHeight: 60,
   },
   menuText: {
     ...Typography.body,
     flex: 1,
     marginLeft: Spacing.md,
+    marginRight: Spacing.md,
+    fontWeight: '500',
   },
   logoutSection: {
     padding: Spacing.lg,
@@ -797,6 +809,18 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
     marginRight: Spacing.xs,
+  },
+  profileCompleteContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  profileCompleteText: {
+    ...Typography.caption,
+    color: Colors.success,
+    fontWeight: '600',
+    marginLeft: Spacing.sm,
   },
   // Requirements Section Styles
   requirementsSection: {

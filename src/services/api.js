@@ -155,6 +155,10 @@ class ApiService {
     return this.put('/doctors/profile', updates);
   }
 
+  async updateDoctorPaymentDetails(paymentDetails) {
+    return this.put('/doctors/payment-details', paymentDetails);
+  }
+
   async updateDoctorAvailability(availability) {
     return this.put('/doctors/availability', availability);
   }
