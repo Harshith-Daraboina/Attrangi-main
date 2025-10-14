@@ -21,18 +21,19 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
-export default function DoctorOnboardingScreen({ navigation }) {
+export default function DoctorOnboardingScreen({ navigation, route }) {
   const { palette } = useThemeSettings();
   const { user, refreshUser } = useAuth();
+  const { userData } = route.params || {};
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
+    fullName: userData?.fullName || '',
+    email: userData?.email || '',
+    phone: userData?.phone || '',
     gender: '',
-    dateOfBirth: '',
+    dateOfBirth: userData?.dateOfBirth || '',
     medicalLicenseNumber: '',
     yearsOfExperience: '',
     specialization: '',

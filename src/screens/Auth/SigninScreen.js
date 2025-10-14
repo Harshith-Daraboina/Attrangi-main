@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
+  ScrollView,
   Alert,
   ActivityIndicator
 } from 'react-native';
@@ -121,115 +122,122 @@ export default function SignInScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Welcome Back!</Text>
-        <Text style={styles.subtitle}>Let's login to continue</Text>
-      </View>
-
-      {/* Email Input */}
-      <View style={styles.inputWrapper}>
-        <Icon name="mail" size={18} color={Colors.textPrimary} style={styles.inputIcon} />
-        <TextInput
-          placeholder="Email Address"
-          placeholderTextColor={Colors.textSecondary}
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          editable={!isLoading}
-        />
-        {email.length > 0 && (
-          <MaterialIcon
-            name="check-circle"
-            size={20}
-            color={Colors.primary}
-            style={styles.inputRightIcon}
-          />
-        )}
-      </View>
-
-      {/* Password Input */}
-      <View style={styles.inputWrapper}>
-        <Icon name="lock" size={18} color={Colors.textPrimary} style={styles.inputIcon} />
-        <TextInput
-          placeholder="Password"
-          placeholderTextColor={Colors.textSecondary}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry={secureText}
-          style={styles.input}
-          editable={!isLoading}
-        />
-        <TouchableOpacity
-          onPress={() => setSecureText(!secureText)}
-          style={styles.inputRightIcon}
-          disabled={isLoading}
-        >
-          <Icon name={secureText ? 'eye-off' : 'eye'} size={18} color="#888" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Remember me & Forgot password */}
-      <View style={styles.rememberForgotRow}>
-        <TouchableOpacity onPress={handleForgotPassword} disabled={isLoading}>
-          <Text style={styles.forgotText}>Forgot password</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Sign in Button */}
-      <Button
-        title={isLoading ? "Signing in..." : "Sign in"}
-        onPress={handleSignIn}
-        style={styles.signInButton}
-        disabled={isLoading}
-      />
-
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Signing you in...</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Welcome Back!</Text>
+          <Text style={styles.subtitle}>Let's login to continue</Text>
         </View>
-      )}
 
-      {/* Social Login */}
-      <Text style={styles.loginWith}>You can connect with</Text>
-      <View style={styles.socialRow}>
-        <TouchableOpacity style={styles.socialBtn}>
-          <Image
-            source={require('../../../assets/facebook.png')}
-            style={styles.socialIcon}
+        {/* Email Input */}
+        <View style={styles.inputWrapper}>
+          <Icon name="mail" size={18} color={Colors.textPrimary} style={styles.inputIcon} />
+          <TextInput
+            placeholder="Email Address"
+            placeholderTextColor={Colors.textSecondary}
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            editable={!isLoading}
           />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.socialBtn}>
-          <Image
-            source={require('../../../assets/google.jpg')}
-            style={styles.socialIcon}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.socialBtn}>
-          <Image
-            source={require('../../../assets/apple.jpg')}
-            style={styles.socialIcon}
-          />
-        </TouchableOpacity>
-      </View>
+          {email.length > 0 && (
+            <MaterialIcon
+              name="check-circle"
+              size={20}
+              color={Colors.primary}
+              style={styles.inputRightIcon}
+            />
+          )}
+        </View>
 
-      {/* Sign Up link */}
-      <View style={styles.signUpRow}>
-        <Text style={styles.signUpText}>Don't have an account?</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('SignupEmail')}>
-          <Text style={styles.signUpLink}>Sign up here</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Password Input */}
+        <View style={styles.inputWrapper}>
+          <Icon name="lock" size={18} color={Colors.textPrimary} style={styles.inputIcon} />
+          <TextInput
+            placeholder="Password"
+            placeholderTextColor={Colors.textSecondary}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={secureText}
+            style={styles.input}
+            editable={!isLoading}
+          />
+          <TouchableOpacity
+            onPress={() => setSecureText(!secureText)}
+            style={styles.inputRightIcon}
+            disabled={isLoading}
+          >
+            <Icon name={secureText ? 'eye-off' : 'eye'} size={18} color="#888" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Remember me & Forgot password */}
+        <View style={styles.rememberForgotRow}>
+          <TouchableOpacity onPress={handleForgotPassword} disabled={isLoading}>
+            <Text style={styles.forgotText}>Forgot password</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Sign in Button */}
+        <Button
+          title={isLoading ? "Signing in..." : "Sign in"}
+          onPress={handleSignIn}
+          style={styles.signInButton}
+          disabled={isLoading}
+        />
+
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Signing you in...</Text>
+          </View>
+        )}
+
+        {/* Social Login */}
+        <Text style={styles.loginWith}>You can connect with</Text>
+        <View style={styles.socialRow}>
+          <TouchableOpacity style={styles.socialBtn}>
+            <Image
+              source={require('../../../assets/facebook.png')}
+              style={styles.socialIcon}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.socialBtn}>
+            <Image
+              source={require('../../../assets/google.jpg')}
+              style={styles.socialIcon}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.socialBtn}>
+            <Image
+              source={require('../../../assets/apple.jpg')}
+              style={styles.socialIcon}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Sign Up link */}
+        <View style={styles.signUpRow}>
+          <Text style={styles.signUpText}>Don't have an account?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('SignupEmail')}>
+            <Text style={styles.signUpLink}>Sign up here</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: Spacing.lg, backgroundColor: Colors.background },
+  safeArea: { flex: 1, backgroundColor: Colors.background },
+  container: { flexGrow: 1, padding: Spacing.lg, paddingTop: Spacing.xl },
   header: { alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.xl },
   title: { ...Typography.heading1 },
   subtitle: { ...Typography.caption },

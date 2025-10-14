@@ -21,6 +21,10 @@ export default function VerificationRequirementsScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [showPersonalInfoModal, setShowPersonalInfoModal] = useState(false);
+  const [showProfessionalModal, setShowProfessionalModal] = useState(false);
+  const [showSpecializationModal, setShowSpecializationModal] = useState(false);
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState(false);
   const [documents, setDocuments] = useState({
     licenseDocument: null,
     identityDocument: null,
@@ -39,6 +43,27 @@ export default function VerificationRequirementsScreen({ navigation }) {
       accountHolderName: ''
     }
   });
+  const [personalInfo, setPersonalInfo] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    gender: '',
+    dateOfBirth: ''
+  });
+  const [professionalDetails, setProfessionalDetails] = useState({
+    medicalLicenseNumber: '',
+    yearsOfExperience: '',
+    education: []
+  });
+  const [specializationInfo, setSpecializationInfo] = useState({
+    specialization: '',
+    languages: [],
+    consultationFee: ''
+  });
+  const [availabilityInfo, setAvailabilityInfo] = useState({
+    weekdays: [],
+    consultationTypes: ['video']
+  });
   const [showPlatformDropdown, setShowPlatformDropdown] = useState(false);
 
   const paymentPlatforms = [
@@ -49,6 +74,35 @@ export default function VerificationRequirementsScreen({ navigation }) {
     'BHIM',
     'Other',
   ];
+
+  const specializations = [
+    'Psychology',
+    'Psychiatry',
+    'Speech Therapy',
+    'Occupational Therapy',
+    'Behavioral Therapy',
+    'Cognitive Therapy',
+    'Family Therapy',
+    'Child Psychology',
+    'Clinical Psychology',
+    'Neuropsychology',
+  ];
+
+  const languages = [
+    'English',
+    'Hindi',
+    'Bengali',
+    'Tamil',
+    'Telugu',
+    'Marathi',
+    'Gujarati',
+    'Kannada',
+    'Malayalam',
+    'Punjabi',
+  ];
+
+  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const consultationTypes = ['video', 'in-person', 'phone'];
 
   const user = {
     name: authUser?.name || 'John Doe',
@@ -61,6 +115,10 @@ export default function VerificationRequirementsScreen({ navigation }) {
   useEffect(() => {
     loadDocuments();
     loadPaymentDetails();
+    loadPersonalInfo();
+    loadProfessionalDetails();
+    loadSpecializationInfo();
+    loadAvailabilityInfo();
   }, []);
 
   const loadDocuments = async () => {
@@ -94,6 +152,54 @@ export default function VerificationRequirementsScreen({ navigation }) {
           bankName: existingPaymentDetails.bankAccount?.bankName || '',
           accountHolderName: existingPaymentDetails.bankAccount?.accountHolderName || ''
         }
+      });
+    }
+  };
+
+  const loadPersonalInfo = () => {
+    if (authUser) {
+      setPersonalInfo({
+        fullName: authUser.name || '',
+        email: authUser.email || '',
+        phone: authUser.profile?.phone || '',
+        gender: authUser.profile?.gender || '',
+        dateOfBirth: authUser.profile?.dateOfBirth || ''
+      });
+    }
+  };
+
+  const loadProfessionalDetails = () => {
+    if (user.doctorProfile) {
+      const profile = user.doctorProfile;
+      setProfessionalDetails({
+        medicalLicenseNumber: profile.licenseNumber || '',
+        yearsOfExperience: profile.experience?.toString() || '',
+        education: profile.education || []
+      });
+    }
+  };
+
+  const loadSpecializationInfo = () => {
+    if (user.doctorProfile) {
+      const profile = user.doctorProfile;
+      setSpecializationInfo({
+        specialization: profile.specialization || '',
+        languages: profile.languages || [],
+        consultationFee: profile.consultationFee?.toString() || ''
+      });
+    }
+  };
+
+  const loadAvailabilityInfo = () => {
+    if (user.doctorProfile && user.doctorProfile.availability) {
+      const profile = user.doctorProfile;
+      const weekdays = Object.keys(profile.availability || {}).filter(day => 
+        profile.availability[day] && profile.availability[day].length > 0
+      ).map(day => day.charAt(0).toUpperCase() + day.slice(1));
+      
+      setAvailabilityInfo({
+        weekdays: weekdays,
+        consultationTypes: profile.consultationTypes || ['video']
       });
     }
   };
@@ -273,27 +379,138 @@ export default function VerificationRequirementsScreen({ navigation }) {
     );
   };
 
+  const updatePersonalInfo = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.updateProfile({
+        name: personalInfo.fullName,
+        phone: personalInfo.phone,
+        gender: personalInfo.gender,
+        dateOfBirth: personalInfo.dateOfBirth
+      });
+      
+      if (response.success) {
+        await refreshUser();
+        setShowPersonalInfoModal(false);
+        Alert.alert('Success', 'Personal information updated successfully.', [{ text: 'OK' }]);
+      } else {
+        throw new Error(response.message || 'Failed to update personal information');
+      }
+    } catch (error) {
+      console.error('Error updating personal info:', error);
+      Alert.alert('Error', 'Failed to update personal information');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateProfessionalDetails = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.updateDoctorProfile({
+        licenseNumber: professionalDetails.medicalLicenseNumber,
+        experience: parseInt(professionalDetails.yearsOfExperience) || 0,
+        education: professionalDetails.education
+      });
+      
+      if (response.success) {
+        await refreshUser();
+        setShowProfessionalModal(false);
+        Alert.alert('Success', 'Professional details updated successfully.', [{ text: 'OK' }]);
+      } else {
+        throw new Error(response.message || 'Failed to update professional details');
+      }
+    } catch (error) {
+      console.error('Error updating professional details:', error);
+      Alert.alert('Error', 'Failed to update professional details');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateSpecializationInfo = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.updateDoctorProfile({
+        specialization: specializationInfo.specialization,
+        languages: specializationInfo.languages,
+        consultationFee: parseInt(specializationInfo.consultationFee) || 0
+      });
+      
+      if (response.success) {
+        await refreshUser();
+        setShowSpecializationModal(false);
+        Alert.alert('Success', 'Specialization details updated successfully.', [{ text: 'OK' }]);
+      } else {
+        throw new Error(response.message || 'Failed to update specialization');
+      }
+    } catch (error) {
+      console.error('Error updating specialization:', error);
+      Alert.alert('Error', 'Failed to update specialization details');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateAvailabilityInfo = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Convert weekdays to availability object
+      const availability = {
+        monday: availabilityInfo.weekdays.includes('Monday') ? [{ start: '09:00', end: '17:00' }] : [],
+        tuesday: availabilityInfo.weekdays.includes('Tuesday') ? [{ start: '09:00', end: '17:00' }] : [],
+        wednesday: availabilityInfo.weekdays.includes('Wednesday') ? [{ start: '09:00', end: '17:00' }] : [],
+        thursday: availabilityInfo.weekdays.includes('Thursday') ? [{ start: '09:00', end: '17:00' }] : [],
+        friday: availabilityInfo.weekdays.includes('Friday') ? [{ start: '09:00', end: '17:00' }] : [],
+        saturday: availabilityInfo.weekdays.includes('Saturday') ? [{ start: '09:00', end: '13:00' }] : [],
+        sunday: availabilityInfo.weekdays.includes('Sunday') ? [] : []
+      };
+      
+      const response = await api.updateDoctorProfile({
+        availability: availability,
+        consultationTypes: availabilityInfo.consultationTypes
+      });
+      
+      if (response.success) {
+        await refreshUser();
+        setShowAvailabilityModal(false);
+        Alert.alert('Success', 'Availability updated successfully.', [{ text: 'OK' }]);
+      } else {
+        throw new Error(response.message || 'Failed to update availability');
+      }
+    } catch (error) {
+      console.error('Error updating availability:', error);
+      Alert.alert('Error', 'Failed to update availability');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRequirementAction = (requirement) => {
     switch (requirement.key) {
+      case 'personalInfo':
+        loadPersonalInfo();
+        setShowPersonalInfoModal(true);
+        break;
+      case 'professionalDetails':
+        loadProfessionalDetails();
+        setShowProfessionalModal(true);
+        break;
+      case 'specialization':
+        loadSpecializationInfo();
+        setShowSpecializationModal(true);
+        break;
+      case 'availability':
+        loadAvailabilityInfo();
+        setShowAvailabilityModal(true);
+        break;
       case 'paymentDetails':
-        loadPaymentDetails(); // Reload payment details before showing modal
+        loadPaymentDetails();
         setShowPaymentModal(true);
         break;
       case 'documents':
         setShowDocumentModal(true);
-        break;
-      case 'personalInfo':
-      case 'professionalDetails':
-      case 'specialization':
-      case 'availability':
-        Alert.alert(
-          'Complete Onboarding',
-          'Please complete the doctor onboarding process to fill these details.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Go to Onboarding', onPress: () => navigation.navigate('DoctorOnboarding') }
-          ]
-        );
         break;
       default:
         break;
@@ -702,6 +919,389 @@ export default function VerificationRequirementsScreen({ navigation }) {
                 onPress={() => setShowDocumentModal(false)}
               >
                 <Text style={styles.cancelButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Personal Information Modal */}
+      {showPersonalInfoModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Personal Information</Text>
+              <TouchableOpacity onPress={() => setShowPersonalInfoModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={personalInfo.fullName}
+                  onChangeText={(text) => setPersonalInfo(prev => ({ ...prev, fullName: text }))}
+                  placeholder="Dr. John Doe"
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email (Read-only)</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: Colors.border + '30' }]}
+                  value={personalInfo.email}
+                  editable={false}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={personalInfo.phone}
+                  onChangeText={(text) => setPersonalInfo(prev => ({ ...prev, phone: text }))}
+                  placeholder="+91 9876543210"
+                  placeholderTextColor={Colors.textTertiary}
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Gender</Text>
+                <View style={styles.genderContainer}>
+                  {['Male', 'Female', 'Other'].map(gender => (
+                    <TouchableOpacity
+                      key={gender}
+                      style={[
+                        styles.genderOption,
+                        {
+                          backgroundColor: personalInfo.gender === gender ? Colors.primary : Colors.surface,
+                          borderColor: personalInfo.gender === gender ? Colors.primary : Colors.border,
+                        },
+                      ]}
+                      onPress={() => setPersonalInfo(prev => ({ ...prev, gender }))}
+                    >
+                      <Text style={[
+                        styles.genderText,
+                        { color: personalInfo.gender === gender ? Colors.surface : Colors.textPrimary }
+                      ]}>
+                        {gender}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Date of Birth</Text>
+                <TextInput
+                  style={styles.input}
+                  value={personalInfo.dateOfBirth}
+                  onChangeText={(text) => setPersonalInfo(prev => ({ ...prev, dateOfBirth: text }))}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowPersonalInfoModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={updatePersonalInfo}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={Colors.surface} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Professional Details Modal */}
+      {showProfessionalModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Professional Details</Text>
+              <TouchableOpacity onPress={() => setShowProfessionalModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Medical License Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={professionalDetails.medicalLicenseNumber}
+                  onChangeText={(text) => setProfessionalDetails(prev => ({ ...prev, medicalLicenseNumber: text }))}
+                  placeholder="Enter license number"
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Years of Experience</Text>
+                <TextInput
+                  style={styles.input}
+                  value={professionalDetails.yearsOfExperience}
+                  onChangeText={(text) => setProfessionalDetails(prev => ({ ...prev, yearsOfExperience: text }))}
+                  placeholder="e.g., 5"
+                  placeholderTextColor={Colors.textTertiary}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <Text style={styles.sectionTitle}>Education</Text>
+              <Text style={[styles.modalDescription, { fontSize: 12 }]}>
+                Your education details help patients understand your qualifications.
+              </Text>
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowProfessionalModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={updateProfessionalDetails}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={Colors.surface} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Specialization Modal */}
+      {showSpecializationModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Specialization & Languages</Text>
+              <TouchableOpacity onPress={() => setShowSpecializationModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Specialization</Text>
+                <View style={styles.optionsContainer}>
+                  {specializations.map(spec => (
+                    <TouchableOpacity
+                      key={spec}
+                      style={[
+                        styles.optionChip,
+                        {
+                          backgroundColor: specializationInfo.specialization === spec ? Colors.primary : Colors.surface,
+                          borderColor: specializationInfo.specialization === spec ? Colors.primary : Colors.border,
+                        },
+                      ]}
+                      onPress={() => setSpecializationInfo(prev => ({ ...prev, specialization: spec }))}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        { color: specializationInfo.specialization === spec ? Colors.surface : Colors.textPrimary }
+                      ]}>
+                        {spec}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Languages Spoken</Text>
+                <View style={styles.optionsContainer}>
+                  {languages.map(lang => (
+                    <TouchableOpacity
+                      key={lang}
+                      style={[
+                        styles.optionChip,
+                        {
+                          backgroundColor: specializationInfo.languages.includes(lang) ? Colors.primary : Colors.surface,
+                          borderColor: specializationInfo.languages.includes(lang) ? Colors.primary : Colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        setSpecializationInfo(prev => ({
+                          ...prev,
+                          languages: prev.languages.includes(lang)
+                            ? prev.languages.filter(l => l !== lang)
+                            : [...prev.languages, lang]
+                        }));
+                      }}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        { color: specializationInfo.languages.includes(lang) ? Colors.surface : Colors.textPrimary }
+                      ]}>
+                        {lang}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Consultation Fee (₹)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={specializationInfo.consultationFee}
+                  onChangeText={(text) => setSpecializationInfo(prev => ({ ...prev, consultationFee: text }))}
+                  placeholder="e.g., 1000"
+                  placeholderTextColor={Colors.textTertiary}
+                  keyboardType="numeric"
+                />
+              </View>
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowSpecializationModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={updateSpecializationInfo}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={Colors.surface} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Availability Modal */}
+      {showAvailabilityModal && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Availability Schedule</Text>
+              <TouchableOpacity onPress={() => setShowAvailabilityModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Available Weekdays</Text>
+                <View style={styles.optionsContainer}>
+                  {weekdays.map(day => (
+                    <TouchableOpacity
+                      key={day}
+                      style={[
+                        styles.optionChip,
+                        {
+                          backgroundColor: availabilityInfo.weekdays.includes(day) ? Colors.primary : Colors.surface,
+                          borderColor: availabilityInfo.weekdays.includes(day) ? Colors.primary : Colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        setAvailabilityInfo(prev => ({
+                          ...prev,
+                          weekdays: prev.weekdays.includes(day)
+                            ? prev.weekdays.filter(d => d !== day)
+                            : [...prev.weekdays, day]
+                        }));
+                      }}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        { color: availabilityInfo.weekdays.includes(day) ? Colors.surface : Colors.textPrimary }
+                      ]}>
+                        {day}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Consultation Types</Text>
+                <View style={styles.optionsContainer}>
+                  {consultationTypes.map(type => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.optionChip,
+                        {
+                          backgroundColor: availabilityInfo.consultationTypes.includes(type) ? Colors.primary : Colors.surface,
+                          borderColor: availabilityInfo.consultationTypes.includes(type) ? Colors.primary : Colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        setAvailabilityInfo(prev => ({
+                          ...prev,
+                          consultationTypes: prev.consultationTypes.includes(type)
+                            ? prev.consultationTypes.filter(t => t !== type)
+                            : [...prev.consultationTypes, type]
+                        }));
+                      }}
+                    >
+                      <Text style={[
+                        styles.optionText,
+                        { color: availabilityInfo.consultationTypes.includes(type) ? Colors.surface : Colors.textPrimary }
+                      ]}>
+                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <Text style={styles.modalDescription}>
+                Default time: 9 AM - 5 PM on weekdays, 9 AM - 1 PM on weekends. You can customize this further from your profile settings.
+              </Text>
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowAvailabilityModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.saveButton}
+                onPress={updateAvailabilityInfo}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={Colors.surface} />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -1139,5 +1739,43 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginLeft: Spacing.xs,
     flex: 1,
+  },
+  // Gender and Option Styles
+  genderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: Spacing.sm,
+  },
+  genderOption: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    alignItems: 'center',
+    marginHorizontal: Spacing.xs,
+  },
+  genderText: {
+    ...Typography.body,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: Spacing.sm,
+  },
+  optionChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    marginRight: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  optionText: {
+    ...Typography.body,
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

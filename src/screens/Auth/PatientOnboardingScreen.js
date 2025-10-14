@@ -21,9 +21,10 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
-export default function PatientOnboardingScreen({ navigation }) {
+export default function PatientOnboardingScreen({ navigation, route }) {
   const { palette } = useThemeSettings();
   const { refreshUser } = useAuth();
+  const { userData } = route.params || {};
   const [currentStep, setCurrentStep] = useState(0);
   const [isChatbotActive, setIsChatbotActive] = useState(false);
   const [chatbotStep, setChatbotStep] = useState(0);
@@ -32,11 +33,11 @@ export default function PatientOnboardingScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
+    fullName: userData?.fullName || '',
+    email: userData?.email || '',
+    phone: userData?.phone || '',
     gender: '',
-    dateOfBirth: '',
+    dateOfBirth: userData?.dateOfBirth || '',
     medicalHistory: '',
     currentChallenges: [],
     preferredLanguages: [],

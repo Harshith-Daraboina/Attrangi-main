@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Pressable, Modal } from 'react-native';
+import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Pressable, Modal, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../../styles/designSystem';
 import Button from '../../components/Button';
@@ -29,55 +29,66 @@ export default function SignupEmailScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create Your Account</Text>
-      <Text style={styles.subtitle}>Create account to explore more</Text>
-      
-      <View style={styles.topImageWrapper}>
-        <Image source={require('../../../assets/signup1.png')} style={styles.image} resizeMode="contain" />
-      </View>
-      
-      <View style={styles.inputContainer}>
-        <Ionicons name="mail-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          placeholder="Email Address"
-          placeholderTextColor={Colors.textSecondary}
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        {email.length > 0 && <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />}
-      </View>
-
-      {/* Role Selection Button */}
-      <TouchableOpacity 
-        style={[styles.roleButton, selectedRole && styles.roleButtonSelected]} 
-        onPress={() => setShowRoleModal(true)}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <Ionicons 
-          name="person-outline" 
-          size={20} 
-          color={selectedRole ? Colors.primary : Colors.textSecondary} 
-          style={styles.inputIcon} 
-        />
-        <Text style={[styles.roleButtonText, selectedRole && styles.roleButtonTextSelected]}>
-          {selectedRole ? `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}` : 'Select Your Role'}
-        </Text>
-        <Ionicons 
-          name="chevron-down" 
-          size={20} 
-          color={selectedRole ? Colors.primary : Colors.textSecondary} 
-        />
-      </TouchableOpacity>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Create Your Account</Text>
+          <Text style={styles.subtitle}>Create account to explore more</Text>
+          
+          <View style={styles.topImageWrapper}>
+            <Image source={require('../../../assets/signup1.png')} style={styles.image} resizeMode="contain" />
+          </View>
+      
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+            <TextInput
+              placeholder="Email Address"
+              placeholderTextColor={Colors.textSecondary}
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            {email.length > 0 && <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />}
+          </View>
 
-      <Button 
-        title="Continue" 
-        onPress={handleContinue} 
-        style={styles.button}
-        disabled={!email.trim() || !selectedRole}
-      />
+          {/* Role Selection Button */}
+          <TouchableOpacity 
+            style={[styles.roleButton, selectedRole && styles.roleButtonSelected]} 
+            onPress={() => setShowRoleModal(true)}
+          >
+            <Ionicons 
+              name="person-outline" 
+              size={20} 
+              color={selectedRole ? Colors.primary : Colors.textSecondary} 
+              style={styles.inputIcon} 
+            />
+            <Text style={[styles.roleButtonText, selectedRole && styles.roleButtonTextSelected]}>
+              {selectedRole ? `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}` : 'Select Your Role'}
+            </Text>
+            <Ionicons 
+              name="chevron-down" 
+              size={20} 
+              color={selectedRole ? Colors.primary : Colors.textSecondary} 
+            />
+          </TouchableOpacity>
+
+          <Button 
+            title="Continue" 
+            onPress={handleContinue} 
+            style={styles.button}
+            disabled={!email.trim() || !selectedRole}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Role Selection Modal */}
       <Modal
@@ -125,16 +136,24 @@ export default function SignupEmailScreen({ navigation }) {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.lg, alignItems: 'center', paddingTop: 100 },
-  topImageWrapper: { marginTop: 100, marginBottom: Spacing.lg, width: '100%', height: 300 },
+  safeArea: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
+  scrollContent: { 
+    flexGrow: 1,
+    paddingHorizontal: Spacing.lg, 
+    alignItems: 'center', 
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xl,
+  },
+  topImageWrapper: { marginTop: Spacing.md, marginBottom: Spacing.lg, width: '100%', height: 220 },
   image: { width: '100%', height: '100%' },
   title: { ...Typography.heading1, textAlign: 'center', marginBottom: Spacing.xs },
-  subtitle: { ...Typography.caption, textAlign: 'center', marginBottom: Spacing.lg },
+  subtitle: { ...Typography.caption, textAlign: 'center', marginBottom: Spacing.md },
   inputContainer: { 
     flexDirection: 'row', 
     alignItems: 'center', 

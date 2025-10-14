@@ -56,7 +56,11 @@ export default function SignupDetailsScreen({ navigation, route }) {
   };
 
   const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(false);
+    // On iOS, keep picker open until user clicks Done/Cancel
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
     if (selectedDate) {
       const isoDate = selectedDate.toISOString().split('T')[0];
       setForm(prev => ({ ...prev, dateOfBirth: isoDate }));
@@ -86,16 +90,27 @@ export default function SignupDetailsScreen({ navigation, route }) {
       const result = await auth.register(userData);
       
       if (result.success) {
+        // Prepare user data to pass to onboarding to avoid duplicate entry
+        const onboardingData = {
+          fullName: `${form.firstName.trim()} ${form.lastName.trim()}`,
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          email: email,
+          phone: form.phone.trim(),
+          dateOfBirth: form.dateOfBirth,
+          role: role
+        };
+
         // Account created successfully, navigate to appropriate onboarding based on role
         if (role === 'patient') {
-          navigation.navigate('PatientOnboarding');
+          navigation.navigate('PatientOnboarding', { userData: onboardingData });
         } else if (role === 'doctor') {
-          navigation.navigate('DoctorOnboarding');
+          navigation.navigate('DoctorOnboarding', { userData: onboardingData });
         } else if (role === 'caregiver') {
-          navigation.navigate('CaregiverOnboarding');
+          navigation.navigate('CaregiverOnboarding', { userData: onboardingData });
         } else {
           // Default fallback
-          navigation.navigate('PatientOnboarding');
+          navigation.navigate('PatientOnboarding', { userData: onboardingData });
         }
       } else {
         Alert.alert('Error', result.error || 'Failed to create account');
@@ -157,130 +172,166 @@ export default function SignupDetailsScreen({ navigation, route }) {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Complete Your Profile</Text>
-      <Text style={styles.subtitle}>Add your personal details to continue</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        style={styles.container} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.title}>Complete Your Profile</Text>
+          <Text style={styles.subtitle}>Add your personal details to continue</Text>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="person-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          placeholder="First Name"
-          placeholderTextColor={Colors.textSecondary}
-          style={styles.input}
-          value={form.firstName}
-          onChangeText={(text) => setForm({ ...form, firstName: text })}
-          autoCapitalize="words"
-        />
-      </View>
+          <View style={styles.inputContainer}>
+            <Ionicons name="person-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+            <TextInput
+              placeholder="First Name"
+              placeholderTextColor={Colors.textSecondary}
+              style={styles.input}
+              value={form.firstName}
+              onChangeText={(text) => setForm({ ...form, firstName: text })}
+              autoCapitalize="words"
+            />
+          </View>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="person-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          placeholder="Last Name"
-          placeholderTextColor={Colors.textSecondary}
-          style={styles.input}
-          value={form.lastName}
-          onChangeText={(text) => setForm({ ...form, lastName: text })}
-          autoCapitalize="words"
-        />
-      </View>
+          <View style={styles.inputContainer}>
+            <Ionicons name="person-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+            <TextInput
+              placeholder="Last Name"
+              placeholderTextColor={Colors.textSecondary}
+              style={styles.input}
+              value={form.lastName}
+              onChangeText={(text) => setForm({ ...form, lastName: text })}
+              autoCapitalize="words"
+            />
+          </View>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="call-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          placeholder="Phone Number"
-          placeholderTextColor={Colors.textSecondary}
-          style={styles.input}
-          value={form.phone}
-          onChangeText={(text) => setForm({ ...form, phone: text })}
-          keyboardType="phone-pad"
-        />
-      </View>
+          <View style={styles.inputContainer}>
+            <Ionicons name="call-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+            <TextInput
+              placeholder="Phone Number"
+              placeholderTextColor={Colors.textSecondary}
+              style={styles.input}
+              value={form.phone}
+              onChangeText={(text) => setForm({ ...form, phone: text })}
+              keyboardType="phone-pad"
+            />
+          </View>
 
-      <TouchableOpacity style={styles.inputContainer} onPress={showDatePickerModal}>
-        <Ionicons name="calendar-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-        <Text style={[styles.input, { color: form.dateOfBirth ? Colors.textPrimary : Colors.textSecondary }]}>
-          {form.dateOfBirth ? convertToDisplayFormat(form.dateOfBirth) : 'Date of Birth (DD/MM/YYYY)'}
-        </Text>
-      </TouchableOpacity>
+          <TouchableOpacity style={styles.inputContainer} onPress={showDatePickerModal}>
+            <Ionicons name="calendar-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+            <Text style={[styles.input, { color: form.dateOfBirth ? Colors.textPrimary : Colors.textSecondary }]}>
+              {form.dateOfBirth ? convertToDisplayFormat(form.dateOfBirth) : 'Date of Birth (DD/MM/YYYY)'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color={Colors.textSecondary} />
+          </TouchableOpacity>
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={selectedDate}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-          maximumDate={new Date()}
-          minimumDate={new Date(1900, 0, 1)}
-        />
-      )}
+          {showDatePicker && Platform.OS === 'ios' && (
+            <View style={styles.iosDatePickerContainer}>
+              <View style={styles.iosDatePickerHeader}>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.iosDatePickerButton}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={[styles.iosDatePickerButton, { color: Colors.primary, fontWeight: '600' }]}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={selectedDate}
+                mode="date"
+                display="spinner"
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+                minimumDate={new Date(1900, 0, 1)}
+                textColor={Colors.textPrimary}
+              />
+            </View>
+          )}
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          placeholder="Enter your password"
-          placeholderTextColor={Colors.textSecondary}
-          secureTextEntry={!showPassword}
-          style={styles.input}
-          value={form.password}
-          onChangeText={(text) => setForm({ ...form, password: text })}
-        />
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <Ionicons 
-            name={showPassword ? "eye-outline" : "eye-off-outline"} 
-            size={20} 
-            color={Colors.textSecondary} 
+          {showDatePicker && Platform.OS === 'android' && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+              minimumDate={new Date(1900, 0, 1)}
+            />
+          )}
+
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+            <TextInput
+              placeholder="Enter your password"
+              placeholderTextColor={Colors.textSecondary}
+              secureTextEntry={!showPassword}
+              style={styles.input}
+              value={form.password}
+              onChangeText={(text) => setForm({ ...form, password: text })}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons 
+                name={showPassword ? "eye-outline" : "eye-off-outline"} 
+                size={20} 
+                color={Colors.textSecondary} 
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
+            <TextInput
+              placeholder="Confirm Password"
+              placeholderTextColor={Colors.textSecondary}
+              secureTextEntry={!showConfirmPassword}
+              style={styles.input}
+              value={form.confirmPassword}
+              onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
+            />
+            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+              <Ionicons 
+                name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
+                size={20} 
+                color={Colors.textSecondary} 
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.roleInfo}>
+            <Text style={styles.roleText}>Role: <Text style={styles.roleValue}>{role}</Text></Text>
+            <Text style={styles.emailText}>Email: <Text style={styles.emailValue}>{email}</Text></Text>
+          </View>
+
+          <Button 
+            title={isLoading ? "Creating Account..." : "Create Account"} 
+            onPress={handleSignup} 
+            style={styles.button}
+            disabled={isLoading}
           />
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
-        <TextInput
-          placeholder="Confirm Password"
-          placeholderTextColor={Colors.textSecondary}
-          secureTextEntry={!showConfirmPassword}
-          style={styles.input}
-          value={form.confirmPassword}
-          onChangeText={(text) => setForm({ ...form, confirmPassword: text })}
-        />
-        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-          <Ionicons 
-            name={showConfirmPassword ? "eye-outline" : "eye-off-outline"} 
-            size={20} 
-            color={Colors.textSecondary} 
-          />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.roleInfo}>
-        <Text style={styles.roleText}>Role: <Text style={styles.roleValue}>{role}</Text></Text>
-        <Text style={styles.emailText}>Email: <Text style={styles.emailValue}>{email}</Text></Text>
-      </View>
-
-      <Button 
-        title={isLoading ? "Creating Account..." : "Create Account"} 
-        onPress={handleSignup} 
-        style={styles.button}
-        disabled={isLoading}
-      />
-
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Creating your {role} account...</Text>
-        </View>
-      )}
-    </View>
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.loadingText}>Creating your {role} account...</Text>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: Colors.background, 
+  safeArea: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1 },
+  scrollContent: { 
+    flexGrow: 1,
     paddingHorizontal: Spacing.lg, 
-    paddingTop: 80, 
+    paddingTop: Spacing.md, 
+    paddingBottom: Spacing.xl,
     alignItems: 'center' 
   },
   title: { ...Typography.heading1, textAlign: 'center', marginBottom: Spacing.xs },
@@ -335,5 +386,26 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     color: Colors.textSecondary,
     fontSize: 14
+  },
+  iosDatePickerContainer: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.lg,
+    width: '100%',
+    ...Shadows.lg,
+    borderWidth: 1,
+    borderColor: Colors.border
+  },
+  iosDatePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border
+  },
+  iosDatePickerButton: {
+    fontSize: 16,
+    color: Colors.textPrimary
   }
 });
