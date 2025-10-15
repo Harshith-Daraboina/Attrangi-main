@@ -164,6 +164,59 @@ export default function AuthScreen({ navigation }) {
           </Text>
         </View>
 
+        {/* Signup Types for Registration */}
+        {!isLogin && (
+          <View style={styles.signupTypesContainer}>
+            <Text style={styles.signupTypesTitle}>Choose Your Account Type</Text>
+            <View style={styles.signupTypesGrid}>
+              <TouchableOpacity 
+                style={[styles.signupTypeCard, formData.role === 'patient' && styles.signupTypeCardSelected]}
+                onPress={() => handleInputChange('role', 'patient')}
+              >
+                <Ionicons name="person-outline" size={32} color={formData.role === 'patient' ? Colors.primary : Colors.textSecondary} />
+                <View style={styles.signupTypeTextContainer}>
+                  <Text style={[styles.signupTypeTitle, formData.role === 'patient' && styles.signupTypeTitleSelected]}>
+                    Patient
+                  </Text>
+                  <Text style={styles.signupTypeDescription}>
+                    Track your mental health journey
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.signupTypeCard, formData.role === 'caregiver' && styles.signupTypeCardSelected]}
+                onPress={() => handleInputChange('role', 'caregiver')}
+              >
+                <Ionicons name="heart-outline" size={32} color={formData.role === 'caregiver' ? Colors.primary : Colors.textSecondary} />
+                <View style={styles.signupTypeTextContainer}>
+                  <Text style={[styles.signupTypeTitle, formData.role === 'caregiver' && styles.signupTypeTitleSelected]}>
+                    Caregiver
+                  </Text>
+                  <Text style={styles.signupTypeDescription}>
+                    Support your loved one's journey
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.signupTypeCard, formData.role === 'doctor' && styles.signupTypeCardSelected]}
+                onPress={() => handleInputChange('role', 'doctor')}
+              >
+                <Ionicons name="medical-outline" size={32} color={formData.role === 'doctor' ? Colors.primary : Colors.textSecondary} />
+                <View style={styles.signupTypeTextContainer}>
+                  <Text style={[styles.signupTypeTitle, formData.role === 'doctor' && styles.signupTypeTitleSelected]}>
+                    Doctor
+                  </Text>
+                  <Text style={styles.signupTypeDescription}>
+                    Provide professional medical care
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Form */}
         <View style={styles.form}>
           {!isLogin && (
@@ -307,59 +360,6 @@ export default function AuthScreen({ navigation }) {
             </Text>
           </TouchableOpacity>
         </View>
-
-        {/* Signup Types for Registration */}
-        {!isLogin && (
-          <View style={styles.signupTypesContainer}>
-            <Text style={styles.signupTypesTitle}>Choose Your Account Type</Text>
-            <View style={styles.signupTypesGrid}>
-              <TouchableOpacity 
-                style={[styles.signupTypeCard, formData.role === 'patient' && styles.signupTypeCardSelected]}
-                onPress={() => handleInputChange('role', 'patient')}
-              >
-                <Ionicons name="person-outline" size={32} color={formData.role === 'patient' ? Colors.primary : Colors.textSecondary} />
-                <View style={styles.signupTypeTextContainer}>
-                  <Text style={[styles.signupTypeTitle, formData.role === 'patient' && styles.signupTypeTitleSelected]}>
-                    Patient
-                  </Text>
-                  <Text style={styles.signupTypeDescription}>
-                    Track your mental health journey
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.signupTypeCard, formData.role === 'caregiver' && styles.signupTypeCardSelected]}
-                onPress={() => handleInputChange('role', 'caregiver')}
-              >
-                <Ionicons name="heart-outline" size={32} color={formData.role === 'caregiver' ? Colors.primary : Colors.textSecondary} />
-                <View style={styles.signupTypeTextContainer}>
-                  <Text style={[styles.signupTypeTitle, formData.role === 'caregiver' && styles.signupTypeTitleSelected]}>
-                    Caregiver
-                  </Text>
-                  <Text style={styles.signupTypeDescription}>
-                    Support your loved one's journey
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.signupTypeCard, formData.role === 'doctor' && styles.signupTypeCardSelected]}
-                onPress={() => handleInputChange('role', 'doctor')}
-              >
-                <Ionicons name="medical-outline" size={32} color={formData.role === 'doctor' ? Colors.primary : Colors.textSecondary} />
-                <View style={styles.signupTypeTextContainer}>
-                  <Text style={[styles.signupTypeTitle, formData.role === 'doctor' && styles.signupTypeTitleSelected]}>
-                    Doctor
-                  </Text>
-                  <Text style={styles.signupTypeDescription}>
-                    Provide professional medical care
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
 
         {/* Privacy Notice */}
         <View style={styles.privacyContainer}>

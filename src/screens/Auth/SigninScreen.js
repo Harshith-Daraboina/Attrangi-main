@@ -10,7 +10,9 @@ import {
   SafeAreaView,
   ScrollView,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  StatusBar,
+  Platform
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -122,7 +124,8 @@ export default function SignInScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <ScrollView 
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -236,9 +239,13 @@ export default function SignInScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.background },
-  container: { flexGrow: 1, padding: Spacing.lg, paddingTop: Spacing.xl },
-  header: { alignItems: 'center', marginTop: Spacing.md, marginBottom: Spacing.xl },
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: Colors.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
+  },
+  container: { flexGrow: 1, padding: Spacing.lg, paddingTop: Spacing.md },
+  header: { alignItems: 'center', marginTop: Spacing.sm, marginBottom: Spacing.xl },
   title: { ...Typography.heading1 },
   subtitle: { ...Typography.caption },
   inputWrapper: {

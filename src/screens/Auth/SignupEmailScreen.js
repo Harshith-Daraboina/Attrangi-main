@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Pressable, Modal, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Pressable, Modal, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../../styles/designSystem';
 import Button from '../../components/Button';
@@ -29,7 +29,8 @@ export default function SignupEmailScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <KeyboardAvoidingView 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -42,6 +43,27 @@ export default function SignupEmailScreen({ navigation }) {
           <Text style={styles.title}>Create Your Account</Text>
           <Text style={styles.subtitle}>Create account to explore more</Text>
           
+          {/* Role Selection Button - First interactive element */}
+          <TouchableOpacity 
+            style={[styles.roleButton, selectedRole && styles.roleButtonSelected]} 
+            onPress={() => setShowRoleModal(true)}
+          >
+            <Ionicons 
+              name="person-outline" 
+              size={20} 
+              color={selectedRole ? Colors.primary : Colors.textSecondary} 
+              style={styles.inputIcon} 
+            />
+            <Text style={[styles.roleButtonText, selectedRole && styles.roleButtonTextSelected]}>
+              {selectedRole ? `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}` : 'Choose Your Account Type'}
+            </Text>
+            <Ionicons 
+              name="chevron-down" 
+              size={20} 
+              color={selectedRole ? Colors.primary : Colors.textSecondary} 
+            />
+          </TouchableOpacity>
+
           <View style={styles.topImageWrapper}>
             <Image source={require('../../../assets/signup1.png')} style={styles.image} resizeMode="contain" />
           </View>
@@ -59,27 +81,6 @@ export default function SignupEmailScreen({ navigation }) {
             />
             {email.length > 0 && <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />}
           </View>
-
-          {/* Role Selection Button */}
-          <TouchableOpacity 
-            style={[styles.roleButton, selectedRole && styles.roleButtonSelected]} 
-            onPress={() => setShowRoleModal(true)}
-          >
-            <Ionicons 
-              name="person-outline" 
-              size={20} 
-              color={selectedRole ? Colors.primary : Colors.textSecondary} 
-              style={styles.inputIcon} 
-            />
-            <Text style={[styles.roleButtonText, selectedRole && styles.roleButtonTextSelected]}>
-              {selectedRole ? `${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}` : 'Select Your Role'}
-            </Text>
-            <Ionicons 
-              name="chevron-down" 
-              size={20} 
-              color={selectedRole ? Colors.primary : Colors.textSecondary} 
-            />
-          </TouchableOpacity>
 
           <Button 
             title="Continue" 
@@ -99,8 +100,8 @@ export default function SignupEmailScreen({ navigation }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Your Role</Text>
-            <Text style={styles.modalSubtitle}>Choose how you'll be using the app</Text>
+            <Text style={styles.modalTitle}>Choose Your Account Type</Text>
+            <Text style={styles.modalSubtitle}>Select how you'll be using the app</Text>
             
             <View style={styles.roleOptions}>
               <Pressable 
@@ -141,16 +142,20 @@ export default function SignupEmailScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.background },
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: Colors.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
+  },
   container: { flex: 1 },
   scrollContent: { 
     flexGrow: 1,
     paddingHorizontal: Spacing.lg, 
     alignItems: 'center', 
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
     paddingBottom: Spacing.xl,
   },
-  topImageWrapper: { marginTop: Spacing.md, marginBottom: Spacing.lg, width: '100%', height: 220 },
+  topImageWrapper: { marginTop: Spacing.sm, marginBottom: Spacing.md, width: '100%', height: 200 },
   image: { width: '100%', height: '100%' },
   title: { ...Typography.heading1, textAlign: 'center', marginBottom: Spacing.xs },
   subtitle: { ...Typography.caption, textAlign: 'center', marginBottom: Spacing.md },
@@ -179,6 +184,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderWidth: 1,
     borderColor: Colors.border,
+    marginTop: Spacing.lg,
     marginBottom: Spacing.lg,
     ...Shadows.sm
   },

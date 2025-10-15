@@ -7,6 +7,9 @@ import {
   Dimensions,
   Image,
   ScrollView,
+  SafeAreaView,
+  StatusBar,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../styles/designSystem';
@@ -73,7 +76,8 @@ export default function RoleSelectScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
@@ -165,7 +169,7 @@ export default function RoleSelectScreen({ navigation }) {
 
       {/* Debug Navigation - Remove in production */}
       <DebugNavigation navigation={navigation} />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -173,16 +177,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
   },
   header: {
     alignItems: 'center',
     padding: Spacing.xl,
-    paddingTop: Spacing.xl * 2,
+    paddingTop: Spacing.md,
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
-    top: Spacing.xl * 2,
+    top: Spacing.md,
     left: Spacing.xl,
     padding: Spacing.sm,
     zIndex: 1,
